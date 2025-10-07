@@ -527,23 +527,46 @@
 
             wheel.innerHTML = '';
             
-            // Display all participants on wheel
-            const segmentAngle = 360 / participants.length;
+            const numSegments = participants.length;
+            const segmentAngle = 360 / numSegments;
 
             participants.forEach((participant, index) => {
                 const segment = document.createElement('div');
                 segment.className = 'wheel-segment';
                 
                 const rotation = index * segmentAngle;
-                segment.style.transform = `rotate(${rotation}deg)`;
-                segment.style.clipPath = `polygon(50% 50%, 
-                    ${50 + 50 * Math.cos((rotation - 90) * Math.PI / 180)}% ${50 + 50 * Math.sin((rotation - 90) * Math.PI / 180)}%, 
-                    ${50 + 50 * Math.cos((rotation + segmentAngle - 90) * Math.PI / 180)}% ${50 + 50 * Math.sin((rotation + segmentAngle - 90) * Math.PI / 180)}%)`;
+                const nextRotation = (index + 1) * segmentAngle;
+                
+                // Calculate polygon points for pie slice
+                const startAngle = rotation - 90;
+                const endAngle = nextRotation - 90;
+                
+                const x1 = 50 + 50 * Math.cos(startAngle * Math.PI / 180);
+                const y1 = 50 + 50 * Math.sin(startAngle * Math.PI / 180);
+                const x2 = 50 + 50 * Math.cos(endAngle * Math.PI / 180);
+                const y2 = 50 + 50 * Math.sin(endAngle * Math.PI / 180);
+                
+                segment.style.clipPath = `polygon(50% 50%, ${x1}% ${y1}%, ${x2}% ${y2}%)`;
                 segment.style.backgroundColor = colors[index % colors.length];
                 
+                // Position text in the middle of the segment
                 const content = document.createElement('div');
                 content.className = 'segment-content';
-                content.style.transform = `rotate(${segmentAngle / 2}deg)`;
+                
+                // Calculate position for text
+                const middleAngle = (startAngle + endAngle) / 2;
+                const textRotation = middleAngle + 90;
+                const distance = 65; // Distance from center (%)
+                
+                const textX = 50 + distance * Math.cos(middleAngle * Math.PI / 180);
+                const textY = 50 + distance * Math.sin(middleAngle * Math.PI / 180);
+                
+                content.style.position = 'absolute';
+                content.style.left = textX + '%';
+                content.style.top = textY + '%';
+                content.style.transform = `translate(-50%, -50%) rotate(${textRotation}deg)`;
+                content.style.width = 'auto';
+                content.style.maxWidth = '100px';
                 content.textContent = participant.displayText;
                 
                 segment.appendChild(content);
