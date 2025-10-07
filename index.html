@@ -182,18 +182,7 @@
             overflow: visible;
         }
 
-        .wheel-pointer {
-            position: absolute;
-            top: -10px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 0;
-            height: 0;
-            border-left: 15px solid transparent;
-            border-right: 15px solid transparent;
-            border-top: 30px solid #e53e3e;
-            z-index: 10;
-        }
+
 
         .wheel-center {
             position: absolute;
@@ -298,13 +287,19 @@
         }
 
         @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-            100% { transform: scale(1); }
+            0% { 
+                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            }
+            50% { 
+                box-shadow: 0 15px 40px rgba(102, 126, 234, 0.6), 0 0 30px rgba(118, 75, 162, 0.4);
+            }
+            100% { 
+                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            }
         }
 
         .spinning {
-            animation: pulse 0.5s infinite;
+            box-shadow: 0 15px 50px rgba(102, 126, 234, 0.8), 0 0 40px rgba(118, 75, 162, 0.6) !important;
         }
 
         .status-message {
@@ -384,7 +379,6 @@
         </div>
 
         <div class="wheel-container">
-            <div class="wheel-pointer"></div>
             <div id="wheel" class="wheel">
                 <div style="display: flex; align-items: center; justify-content: center; height: 100%; font-size: 18px; color: #666;">
                     Upload participants to start
