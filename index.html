@@ -171,15 +171,15 @@
         }
 
         .segment-content {
-            font-size: 11px;
+            font-size: 13px;
             font-weight: bold;
             color: white;
-            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.8);
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.9), 0 0 8px rgba(0, 0, 0, 0.5);
             text-align: center;
-            max-width: 80px;
-            line-height: 1.2;
+            line-height: 1.1;
             word-break: break-word;
-            transform: rotate(0deg);
+            white-space: nowrap;
+            overflow: visible;
         }
 
         .wheel-pointer {
@@ -210,13 +210,15 @@
             z-index: 100;
             box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
             overflow: hidden;
+            font-size: 0;
+            line-height: 0;
         }
 
         .wheel-center img {
-            width: 100%;
-            height: 100%;
+            width: 130px;
+            height: 130px;
             object-fit: contain;
-            padding: 10px;
+            display: block;
         }
 
         .participants-info {
@@ -389,7 +391,7 @@
                 </div>
             </div>
             <div class="wheel-center">
-                <img src="logo.png" alt="Logo" id="logoImage">
+                <img src="logo.png" alt="" onerror="this.style.display='none'">
             </div>
         </div>
 
@@ -553,10 +555,10 @@
                 const content = document.createElement('div');
                 content.className = 'segment-content';
                 
-                // Calculate position for text
+                // Calculate position for text - further from center
                 const middleAngle = (startAngle + endAngle) / 2;
                 const textRotation = middleAngle + 90;
-                const distance = 65; // Distance from center (%)
+                const distance = 75; // Distance from center (%) - increased from 65
                 
                 const textX = 50 + distance * Math.cos(middleAngle * Math.PI / 180);
                 const textY = 50 + distance * Math.sin(middleAngle * Math.PI / 180);
@@ -566,7 +568,7 @@
                 content.style.top = textY + '%';
                 content.style.transform = `translate(-50%, -50%) rotate(${textRotation}deg)`;
                 content.style.width = 'auto';
-                content.style.maxWidth = '100px';
+                content.style.maxWidth = '120px';
                 content.textContent = participant.displayText;
                 
                 segment.appendChild(content);
