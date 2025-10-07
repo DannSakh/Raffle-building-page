@@ -115,6 +115,31 @@
             transform: none;
         }
 
+        .reset-btn {
+            background: linear-gradient(45deg, #e74c3c, #c0392b);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .reset-btn:hover:not(:disabled) {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .reset-btn:disabled {
+            background: #95a5a6;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
         .wheel-container {
             display: flex;
             justify-content: center;
@@ -177,6 +202,15 @@
             background: #f7fafc;
             border-radius: 10px;
             border-left: 5px solid #4299e1;
+        }
+
+        .winners-info {
+            text-align: center;
+            margin: 20px 0;
+            padding: 15px;
+            background: #fff5f5;
+            border-radius: 10px;
+            border-left: 5px solid #e74c3c;
         }
 
         .winners-display {
@@ -310,13 +344,17 @@
 
             <button id="spinBtn" class="spin-btn" disabled>🎲 Spin the Wheel!</button>
             
-            <button id="resetBtn" class="reset-btn" style="display: none;">🔄 Reset All Winners</button>
+            <button id="resetBtn" class="reset-btn" disabled>🔄 Reset All Winners</button>
         </div>
 
         <div id="statusMessage"></div>
 
         <div id="participantsInfo" class="participants-info" style="display: none;">
-            <p><strong>Participants loaded:</strong> <span id="participantCount">0</span></p>
+            <p><strong>Total Participants:</strong> <span id="participantCount">0</span></p>
+        </div>
+
+        <div id="winnersInfo" class="winners-info" style="display: none;">
+            <p><strong>Winners so far:</strong> <span id="winnersSoFar">0</span> | <strong>Remaining participants:</strong> <span id="remainingCount">0</span></p>
         </div>
 
         <div class="wheel-container">
@@ -341,9 +379,13 @@
 
         const fileInput = document.getElementById('fileInput');
         const spinBtn = document.getElementById('spinBtn');
+        const resetBtn = document.getElementById('resetBtn');
         const wheel = document.getElementById('wheel');
         const participantsInfo = document.getElementById('participantsInfo');
         const participantCount = document.getElementById('participantCount');
+        const winnersInfo = document.getElementById('winnersInfo');
+        const winnersSoFar = document.getElementById('winnersSoFar');
+        const remainingCount = document.getElementById('remainingCount');
         const winnersDisplay = document.getElementById('winnersDisplay');
         const winnersContainer = document.getElementById('winnersContainer');
         const winnerCountSelect = document.getElementById('winnerCount');
@@ -359,8 +401,28 @@
             }, 5000);
         }
 
+        function updateWinnersInfo() {
+            if (participants.length > 0) {
+                winnersSoFar.textContent = usedParticipants.length;
+                remainingCount.textContent = participants.length - usedParticipants.length;
+                winnersInfo.style.display = 'block';
+            }
+        }
+
         fileInput.addEventListener('change', handleFileUpload);
         spinBtn.addEventListener('click', spinWheel);
+        resetBtn.addEventListener('click', resetWinners);
+
+        function resetWinners() {
+            if (confirm('Are you sure you want to reset all winners?\n\nThis will:\n✓ Clear all previous winners\n✓ Allow everyone to participate again\n✓ Start fresh raffle rounds')) {
+                usedParticipants = [];
+                winnersContainer.innerHTML = '';
+                winnersDisplay.style.display = 'none';
+                resetBtn.disabled = true;
+                updateWinnersInfo();
+                showStatus('✅ All winners have been reset! Everyone can participate again.', 'success');
+            }
+        }
 
         function handleFileUpload(event) {
             const file = event.target.files[0];
@@ -409,7 +471,11 @@
                     updateParticipantsDisplay();
                     createWheel();
                     spinBtn.disabled = false;
-                    showStatus(`Successfully loaded ${participants.length} participants!`);
+                    resetBtn.disabled = true;
+                    winnersContainer.innerHTML = '';
+                    winnersDisplay.style.display = 'none';
+                    updateWinnersInfo();
+                    showStatus(`✅ Successfully loaded ${participants.length} participants!`);
 
                 } catch (error) {
                     console.error('Error reading file:', error);
@@ -465,13 +531,12 @@
             const availableParticipants = participants.filter(p => !usedParticipants.includes(p));
             
             if (availableParticipants.length === 0) {
-                showStatus('All participants have already won! Resetting for new round.', 'error');
-                usedParticipants = [];
+                showStatus('❌ All participants have already won! Please click "Reset All Winners" to start new rounds.', 'error');
                 return;
             }
 
             if (availableParticipants.length < winnersCount) {
-                showStatus(`Only ${availableParticipants.length} participants remaining. Adjust winner count or reset.`, 'error');
+                showStatus(`⚠️ Only ${availableParticipants.length} participants remaining. Please adjust winner count or reset.`, 'error');
                 return;
             }
 
@@ -504,8 +569,10 @@
                 isSpinning = false;
                 spinBtn.disabled = false;
                 wheel.classList.remove('spinning');
+                resetBtn.disabled = false;
+                updateWinnersInfo();
                 
-                showStatus(`Congratulations to ${winners.length} winner${winners.length > 1 ? 's' : ''}!`);
+                showStatus(`🎉 Congratulations to ${winners.length} winner${winners.length > 1 ? 's' : ''}!`);
             }, 5000);
         }
 
