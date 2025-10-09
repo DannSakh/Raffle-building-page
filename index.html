@@ -1,4 +1,23 @@
-<!DOCTYPE html>
+#prizesList {
+            background: #f0f4ff;
+            border-left: 5px solid #667eea;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px auto;
+            max-width: 600px;
+        }
+
+        #prizesList h3 {
+            color: #4a5568;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+
+        #prizesList p {
+            color: #2d3748;
+            padding: 5px 0;
+            font-size: 0.95em;
+        }<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -145,6 +164,7 @@
             justify-content: center;
             margin: 40px 0;
             position: relative;
+            align-items: center;
         }
 
         .wheel {
@@ -400,15 +420,15 @@
         
         // Prize system
         let prizes = [
-            { name: 'Смартфоны Samsung', count: 5 },
-            { name: 'Планшеты Samsung I', count: 5 },
-            { name: 'Наушники Galaxy Buds Pro 3', count: 5 },
-            { name: 'Смарт-часы Galaxy Watch', count: 5 },
-            { name: 'Планшеты Samsung II', count: 10 },
+            { name: 'Samsung Smartphone', count: 5 },
+            { name: 'Samsung Tablet I', count: 5 },
+            { name: 'Galaxy Buds Pro 3', count: 5 },
+            { name: 'Galaxy Watch', count: 5 },
+            { name: 'Samsung Tablet II', count: 10 },
             { name: 'iPad', count: 3 },
-            { name: 'Планшет Samsung III', count: 1 },
-            { name: 'Смарт-часы Smart Watches II (пары)', count: 4 },
-            { name: 'Смартфоны Oppo', count: 2 }
+            { name: 'Samsung Tablet III', count: 1 },
+            { name: 'Smart Watch II', count: 4 },
+            { name: 'Oppo Smartphone', count: 2 }
         ];
         
         let remainingPrizes = [];
@@ -436,17 +456,19 @@
             const prizesList = document.getElementById('prizesList');
             prizesList.innerHTML = '<h3>🎁 Available Prizes:</h3>';
             
+            const prizeCounts = {};
             remainingPrizes.forEach(prize => {
-                const prizeCount = remainingPrizes.filter(p => p === prize);
-                if (prizeCount.length > 0 && !prizesList.innerHTML.includes(prize)) {
-                    prizesList.innerHTML += `<p><strong>${prize}:</strong> ${prizeCount.length}</p>`;
-                }
+                prizeCounts[prize] = (prizeCounts[prize] || 0) + 1;
+            });
+            
+            Object.keys(prizeCounts).sort().forEach(prize => {
+                prizesList.innerHTML += `<p><strong>${prize}:</strong> ${prizeCounts[prize]}</p>`;
             });
             
             if (remainingPrizes.length === 0) {
-                prizesList.innerHTML += '<p style="color: #e74c3c; font-weight: bold;">❌ No prizes remaining!</p>';
+                prizesList.innerHTML += '<p style="color: #e74c3c; font-weight: bold; margin-top: 10px;">❌ No prizes remaining!</p>';
             } else {
-                prizesList.innerHTML += `<p style="color: #4299e1; font-weight: bold;">Total prizes left: ${remainingPrizes.length}</p>`;
+                prizesList.innerHTML += `<p style="color: #4299e1; font-weight: bold; margin-top: 10px;">Total prizes left: ${remainingPrizes.length}</p>`;
             }
         }
 
