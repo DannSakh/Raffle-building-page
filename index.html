@@ -377,8 +377,6 @@
         <div id="winnersInfo" class="winners-info" style="display: none;">
             <p><strong>Winners so far:</strong> <span id="winnersSoFar">0</span> | <strong>Remaining participants:</strong> <span id="remainingCount">0</span></p>
         </div>
-
-        <div class="wheel-container">
             <div id="wheel" class="wheel">
                 <div style="display: flex; align-items: center; justify-content: center; height: 100%; font-size: 18px; color: #666;">
                     Upload participants to start
@@ -399,6 +397,58 @@
         let participants = [];
         let isSpinning = false;
         let usedParticipants = [];
+        
+        // Prize system
+        let prizes = [
+            { name: 'Смартфоны Samsung', count: 5 },
+            { name: 'Планшеты Samsung I', count: 5 },
+            { name: 'Наушники Galaxy Buds Pro 3', count: 5 },
+            { name: 'Смарт-часы Galaxy Watch', count: 5 },
+            { name: 'Планшеты Samsung II', count: 10 },
+            { name: 'iPad', count: 3 },
+            { name: 'Планшет Samsung III', count: 1 },
+            { name: 'Смарт-часы Smart Watches II (пары)', count: 4 },
+            { name: 'Смартфоны Oppo', count: 2 }
+        ];
+        
+        let remainingPrizes = [];
+        
+        function initializePrizes() {
+            remainingPrizes = [];
+            prizes.forEach(prize => {
+                for (let i = 0; i < prize.count; i++) {
+                    remainingPrizes.push(prize.name);
+                }
+            });
+        }
+        
+        function getRandomPrize() {
+            if (remainingPrizes.length === 0) {
+                return null;
+            }
+            const randomIndex = Math.floor(Math.random() * remainingPrizes.length);
+            const prize = remainingPrizes[randomIndex];
+            remainingPrizes.splice(randomIndex, 1);
+            return prize;
+        }
+        
+        function updatePrizesDisplay() {
+            const prizesList = document.getElementById('prizesList');
+            prizesList.innerHTML = '<h3>🎁 Available Prizes:</h3>';
+            
+            remainingPrizes.forEach(prize => {
+                const prizeCount = remainingPrizes.filter(p => p === prize);
+                if (prizeCount.length > 0 && !prizesList.innerHTML.includes(prize)) {
+                    prizesList.innerHTML += `<p><strong>${prize}:</strong> ${prizeCount.length}</p>`;
+                }
+            });
+            
+            if (remainingPrizes.length === 0) {
+                prizesList.innerHTML += '<p style="color: #e74c3c; font-weight: bold;">❌ No prizes remaining!</p>';
+            } else {
+                prizesList.innerHTML += `<p style="color: #4299e1; font-weight: bold;">Total prizes left: ${remainingPrizes.length}</p>`;
+            }
+        }
 
         const fileInput = document.getElementById('fileInput');
         const spinBtn = document.getElementById('spinBtn');
@@ -437,11 +487,13 @@
         resetBtn.addEventListener('click', resetWinners);
 
         function resetWinners() {
-            if (confirm('Are you sure you want to reset all winners?\n\nThis will:\n✓ Clear all previous winners\n✓ Allow everyone to participate again\n✓ Start fresh raffle rounds')) {
+            if (confirm('Are you sure you want to reset all winners?\n\nThis will:\n✓ Clear all previous winners\n✓ Allow everyone to participate again\n✓ Restore all prizes\n✓ Start fresh raffle rounds')) {
                 usedParticipants = [];
                 winnersContainer.innerHTML = '';
                 winnersDisplay.style.display = 'none';
                 resetBtn.disabled = true;
+                initializePrizes();
+                updatePrizesDisplay();
                 updateWinnersInfo();
                 showStatus('✅ All winners have been reset! Everyone can participate again.', 'success');
             }
@@ -498,6 +550,8 @@
                     winnersContainer.innerHTML = '';
                     winnersDisplay.style.display = 'none';
                     updateWinnersInfo();
+                    initializePrizes();
+                    updatePrizesDisplay();
                     showStatus(`✅ Successfully loaded ${participants.length} participants!`);
 
                 } catch (error) {
@@ -545,27 +599,6 @@
                 segment.style.clipPath = `polygon(50% 50%, ${x1}% ${y1}%, ${x2}% ${y2}%)`;
                 segment.style.backgroundColor = colors[index % colors.length];
                 
-                // Position text in the middle of the segment
-                const content = document.createElement('div');
-                content.className = 'segment-content';
-                
-                // Calculate position for text - further from center
-                const middleAngle = (startAngle + endAngle) / 2;
-                const textRotation = middleAngle + 90;
-                const distance = 75; // Distance from center (%) - increased from 65
-                
-                const textX = 50 + distance * Math.cos(middleAngle * Math.PI / 180);
-                const textY = 50 + distance * Math.sin(middleAngle * Math.PI / 180);
-                
-                content.style.position = 'absolute';
-                content.style.left = textX + '%';
-                content.style.top = textY + '%';
-                content.style.transform = `translate(-50%, -50%) rotate(${textRotation}deg)`;
-                content.style.width = 'auto';
-                content.style.maxWidth = '120px';
-                content.textContent = participant.displayText;
-                
-                segment.appendChild(content);
                 wheel.appendChild(segment);
             });
         }
@@ -576,6 +609,11 @@
             const winnersCount = parseInt(winnerCountSelect.value);
             const availableParticipants = participants.filter(p => !usedParticipants.includes(p));
             
+            if (remainingPrizes.length === 0) {
+                showStatus('❌ No prizes remaining! Please click "Reset All Winners" to start a new round.', 'error');
+                return;
+            }
+            
             if (availableParticipants.length === 0) {
                 showStatus('❌ All participants have already won! Please click "Reset All Winners" to start new rounds.', 'error');
                 return;
@@ -585,20 +623,28 @@
                 showStatus(`⚠️ Only ${availableParticipants.length} participants remaining. Please adjust winner count or reset.`, 'error');
                 return;
             }
+            
+            if (remainingPrizes.length < winnersCount) {
+                showStatus(`⚠️ Only ${remainingPrizes.length} prizes remaining. Adjust winner count or reset.`, 'error');
+                return;
+            }
 
             isSpinning = true;
             spinBtn.disabled = true;
             wheel.classList.add('spinning');
 
-            // More dramatic spinning
-            const baseSpins = 8 + Math.floor(Math.random() * 4); // 8-11 full rotations
+            // Dramatic spinning with multiple rotations
+            const baseSpins = 5 + Math.floor(Math.random() * 3); // 5-7 full rotations
             const extraDegrees = Math.random() * 360;
             const totalRotation = (baseSpins * 360) + extraDegrees;
             
             // Get current rotation
-            const currentRotation = parseFloat(wheel.style.transform.replace('rotate(', '').replace('deg)', '')) || 0;
+            const currentTransform = wheel.style.transform;
+            const currentRotation = currentTransform ? parseFloat(currentTransform.replace('rotate(', '').replace('deg)', '')) : 0;
             const finalRotation = currentRotation + totalRotation;
             
+            // Apply rotation
+            wheel.style.transition = 'transform 4s cubic-bezier(0.17, 0.67, 0.12, 0.99)';
             wheel.style.transform = `rotate(${finalRotation}deg)`;
 
             setTimeout(() => {
@@ -606,11 +652,20 @@
                 const shuffledAvailable = [...availableParticipants].sort(() => Math.random() - 0.5);
                 
                 for (let i = 0; i < winnersCount && i < shuffledAvailable.length; i++) {
-                    winners.push(shuffledAvailable[i]);
+                    const prize = getRandomPrize();
+                    if (prize === null) {
+                        showStatus('⚠️ Ran out of prizes mid-draw! Some winners could not be assigned prizes.', 'error');
+                        break;
+                    }
+                    winners.push({
+                        participant: shuffledAvailable[i],
+                        prize: prize
+                    });
                     usedParticipants.push(shuffledAvailable[i]);
                 }
 
                 displayWinners(winners);
+                updatePrizesDisplay();
                 
                 isSpinning = false;
                 spinBtn.disabled = false;
@@ -619,13 +674,13 @@
                 updateWinnersInfo();
                 
                 showStatus(`🎉 Congratulations to ${winners.length} winner${winners.length > 1 ? 's' : ''}!`);
-            }, 5000);
+            }, 4000);
         }
 
         function displayWinners(winners) {
             winnersContainer.innerHTML = '';
             
-            winners.forEach((winner, index) => {
+            winners.forEach((winnerObj, index) => {
                 const winnerCard = document.createElement('div');
                 winnerCard.className = 'winner-card';
                 winnerCard.style.animationDelay = `${index * 0.1}s`;
@@ -633,8 +688,11 @@
                 winnerCard.innerHTML = `
                     <h3>🏆 Winner ${winners.length > 1 ? index + 1 : ''}</h3>
                     <div class="winner-details">
-                        <div class="winner-detail" style="grid-column: 1 / -1; font-size: 1.2em;">
-                            ${winner.displayText}
+                        <div class="winner-detail" style="grid-column: 1 / -1; font-size: 1.1em;">
+                            <strong>Participant:</strong> ${winnerObj.participant.displayText}
+                        </div>
+                        <div class="winner-detail" style="grid-column: 1 / -1; font-size: 1.2em; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 8px;">
+                            <strong>🎁 Prize:</strong> ${winnerObj.prize}
                         </div>
                     </div>
                 `;
