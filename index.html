@@ -286,38 +286,39 @@
         .winner-card {
             background: rgba(255, 255, 255, 0.95);
             color: #2d3748;
-            padding: 20px;
-            margin: 10px 0;
+            padding: 12px 20px;
+            margin: 8px 0;
             border-radius: 10px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
             animation: slideIn 0.5s ease-out;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 15px;
         }
 
-        .winner-card h3 {
-            color: #4a5568;
-            margin-bottom: 15px;
-            font-size: 1.2em;
+        .winner-card .winner-number {
+            color: #667eea;
+            font-weight: bold;
+            font-size: 1.1em;
+            min-width: 80px;
         }
 
-        .winner-info {
-            background: #f7fafc;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 10px;
-        }
-
-        .winner-info strong {
+        .winner-card .participant-name {
+            flex: 1;
             color: #2d3748;
+            font-weight: bold;
+            font-size: 1.05em;
         }
 
-        .prize-box {
+        .winner-card .prize-name {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            padding: 15px;
-            border-radius: 8px;
-            font-size: 1.1em;
+            padding: 6px 15px;
+            border-radius: 6px;
             font-weight: bold;
-            text-align: center;
+            font-size: 0.95em;
+            white-space: nowrap;
         }
 
         @keyframes slideIn {
@@ -454,6 +455,7 @@
         let participants = [];
         let isSpinning = false;
         let usedParticipants = [];
+        let totalWinnersCount = 0;
         
         let prizes = [
             { name: 'Smartphone Samsung A05s', count: 5 },
@@ -567,6 +569,7 @@
 
                     participants = [];
                     usedParticipants = [];
+                    totalWinnersCount = 0;
 
                     for (let i = 0; i < jsonData.length; i++) {
                         const row = jsonData[i];
@@ -707,6 +710,7 @@
                     usedParticipants.push(shuffledAvailable[i]);
                 }
 
+                totalWinnersCount += winners.length;
                 displayWinners(winners);
                 updatePrizesDisplay();
                 
@@ -731,14 +735,12 @@
                 winnerCard.className = 'winner-card';
                 winnerCard.style.animationDelay = `${index * 0.1}s`;
                 
+                const winnerNumber = totalWinnersCount - winners.length + index + 1;
+                
                 winnerCard.innerHTML = `
-                    <h3>🏆 Winner ${winners.length > 1 ? index + 1 : ''}</h3>
-                    <div class="winner-info">
-                        <strong>Participant:</strong> ${winnerObj.participant.displayText}
-                    </div>
-                    <div class="prize-box">
-                        🎁 ${winnerObj.prize}
-                    </div>
+                    <span class="winner-number">🏆 Winner ${winnerNumber}:</span>
+                    <span class="participant-name">${winnerObj.participant.displayText}</span>
+                    <span class="prize-name">🎁 ${winnerObj.prize}</span>
                 `;
                 
                 container.appendChild(winnerCard);
@@ -748,6 +750,7 @@
         function resetWinners() {
             if (confirm('Are you sure you want to reset all winners?\n\nThis will:\n✓ Clear all previous winners\n✓ Allow everyone to participate again\n✓ Restore all prizes')) {
                 usedParticipants = [];
+                totalWinnersCount = 0;
                 winnersDisplay.innerHTML = '<p>🎲 Spin the wheel to see winners here!</p>';
                 winnersDisplay.classList.add('empty-state');
                 resetBtn.disabled = true;
