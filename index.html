@@ -184,12 +184,6 @@
             box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
         }
 
-        .next-round-btn:disabled {
-            background: #95a5a6;
-            cursor: not-allowed;
-            opacity: 0.6;
-        }
-
         .info-panels {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -495,7 +489,7 @@
         let usedParticipants = [];
         let totalWinnersCount = 0;
         let currentRoundIndex = 0;
-        let currentRoundStarted = false;
+        let currentRoundPrizes = [];
         
         const rounds = [
             {
@@ -544,8 +538,6 @@
                 ]
             }
         ];
-        
-        let remainingPrizes = [];
 
         const fileInput = document.getElementById('fileInput');
         const spinBtn = document.getElementById('spinBtn');
@@ -572,91 +564,41 @@
             }, 5000);
         }
 
-        function initializePrizes() {
-            remainingPrizes = [];
-            currentRoundIndex = 0;
-            currentRoundStarted = false;
+        function initializeRound() {
+            currentRoundPrizes = [];
+            const round = rounds[currentRoundIndex];
             
-            rounds.forEach(round => {
-                round.prizes.forEach(prize => {
-                    for (let i = 0; i < prize.count; i++) {
-                        remainingPrizes.push(prize.name);
-                    }
-                });
+            round.prizes.forEach(prize => {
+                for (let i = 0; i < prize.count; i++) {
+                    currentRoundPrizes.push(prize.name);
+                }
             });
         }
 
-        function getCurrentRoundPrizes() {
-            const currentRound = rounds[currentRoundIndex];
-            if (!currentRound) return [];
-            
-            const roundPrizeNames = currentRound.prizes.map(p => p.name);
-            return remainingPrizes.filter(prize => roundPrizeNames.includes(prize));
-        }
-
-        function isCurrentRoundComplete() {
-            return getCurrentRoundPrizes().length === 0;
-        }
-
-        function updateNextRoundButton() {
-            const currentRoundPrizesCount = getCurrentRoundPrizes().length;
-            const winnersCount = parseInt(winnerCountSelect.value);
-            
-            if (currentRoundStarted && currentRoundPrizesCount < winnersCount && currentRoundIndex < rounds.length - 1) {
-                nextRoundBtn.style.display = 'inline-block';
-                spinBtn.disabled = true;
-            } else if (currentRoundStarted && currentRoundPrizesCount === 0 && currentRoundIndex < rounds.length - 1) {
-                nextRoundBtn.style.display = 'inline-block';
-                spinBtn.disabled = true;
-            } else {
-                nextRoundBtn.style.display = 'none';
-                if (!isSpinning && participants.length > 0 && remainingPrizes.length > 0) {
-                    spinBtn.disabled = false;
-                }
-            }
-        }
-
-        function goToNextRound() {
-            if (currentRoundIndex < rounds.length - 1) {
-                currentRoundIndex++;
-                currentRoundStarted = false;
-                nextRoundBtn.style.display = 'none';
-                spinBtn.disabled = false;
-                updateRoundDisplay();
-                showStatus(`✅ Round ${currentRoundIndex + 1} is ready! Click "Spin the Wheel" to start.`, 'success');
-            }
-        }
-
         function getRandomPrizeFromCurrentRound() {
-            const currentRoundPrizes = getCurrentRoundPrizes();
-            
-            if (currentRoundPrizes.length === 0) {
-                return null;
-            }
+            if (currentRoundPrizes.length === 0) return null;
             
             const randomIndex = Math.floor(Math.random() * currentRoundPrizes.length);
             const selectedPrize = currentRoundPrizes[randomIndex];
-            
-            const indexInRemaining = remainingPrizes.indexOf(selectedPrize);
-            remainingPrizes.splice(indexInRemaining, 1);
+            currentRoundPrizes.splice(randomIndex, 1);
             
             return selectedPrize;
         }
 
         function updateRoundDisplay() {
-            const currentRound = rounds[currentRoundIndex];
-            if (!currentRound) return;
+            const round = rounds[currentRoundIndex];
+            if (!round) return;
             
             roundInfo.style.display = 'block';
             
-            let html = `<h3>${currentRound.title}<br><span style="font-size: 0.85em; font-weight: normal;">${currentRound.subtitle}</span></h3>`;
+            let html = `<h3>${round.title}<br><span style="font-size: 0.85em; font-weight: normal;">${round.subtitle}</span></h3>`;
             
-            currentRound.prizes.forEach(prize => {
-                const remaining = remainingPrizes.filter(p => p === prize.name).length;
+            round.prizes.forEach(prize => {
+                const remaining = currentRoundPrizes.filter(p => p === prize.name).length;
                 html += `<p>• ${prize.name} — ${remaining}</p>`;
             });
             
-            html += `<p class="total-left">Total prizes left: ${remainingPrizes.length}</p>`;
+            html += `<p class="total-left">Total prizes left: ${currentRoundPrizes.length}</p>`;
             
             roundInfo.innerHTML = html;
         }
@@ -669,13 +611,36 @@
             }
         }
 
+        function goToNextRound() {
+            if (currentRoundIndex < rounds.length - 1) {
+                currentRoundIndex++;
+                initializeRound();
+                nextRoundBtn.style.display = 'none';
+                spinBtn.disabled = false;
+                updateRoundDisplay();
+                showStatus(`✅ Round ${currentRoundIndex + 1} is ready! Click "Spin the Wheel" to start.`, 'success');
+            }
+        }
+
+        function updateNextRoundButton() {
+            const winnersCount = parseInt(winnerCountSelect.value);
+            
+            if (currentRoundPrizes.length < winnersCount && currentRoundIndex < rounds.length - 1) {
+                nextRoundBtn.style.display = 'inline-block';
+                spinBtn.disabled = true;
+            } else {
+                nextRoundBtn.style.display = 'none';
+                if (!isSpinning && participants.length > 0 && currentRoundPrizes.length > 0) {
+                    spinBtn.disabled = false;
+                }
+            }
+        }
+
         fileInput.addEventListener('change', handleFileUpload);
         spinBtn.addEventListener('click', spinWheel);
         resetBtn.addEventListener('click', resetWinners);
         nextRoundBtn.addEventListener('click', goToNextRound);
-        winnerCountSelect.addEventListener('change', function() {
-            updateNextRoundButton();
-        });
+        winnerCountSelect.addEventListener('change', updateNextRoundButton);
 
         function handleFileUpload(event) {
             const file = event.target.files[0];
@@ -700,6 +665,7 @@
                     participants = [];
                     usedParticipants = [];
                     totalWinnersCount = 0;
+                    currentRoundIndex = 0;
 
                     for (let i = 0; i < jsonData.length; i++) {
                         const row = jsonData[i];
@@ -731,8 +697,7 @@
                     winnersDisplay.innerHTML = '<p>🎲 Spin the wheel to see winners here!</p>';
                     winnersDisplay.classList.add('empty-state');
                     updateWinnersInfo();
-                    initializePrizes();
-                    currentRoundStarted = false;
+                    initializeRound();
                     updateRoundDisplay();
                     showStatus(`✅ Successfully loaded ${participants.length} participants!`);
 
@@ -787,21 +752,12 @@
         function spinWheel() {
             if (isSpinning || participants.length === 0) return;
             
-            currentRoundStarted = true;
-            
             const winnersCount = parseInt(winnerCountSelect.value);
             const availableParticipants = participants.filter(p => !usedParticipants.includes(p));
             
-            const currentRoundPrizesCount = getCurrentRoundPrizes().length;
-            
-            if (currentRoundPrizesCount === 0) {
+            if (currentRoundPrizes.length === 0) {
                 showStatus('⚠️ Current round is complete! Click "Go to Next Round" to continue.', 'error');
                 updateNextRoundButton();
-                return;
-            }
-            
-            if (remainingPrizes.length === 0) {
-                showStatus('❌ No prizes remaining! Please click "Reset All Winners" to start a new round.', 'error');
                 return;
             }
             
@@ -815,8 +771,8 @@
                 return;
             }
             
-            if (currentRoundPrizesCount < winnersCount) {
-                showStatus(`⚠️ Only ${currentRoundPrizesCount} prizes remaining in current round. Click "Go to Next Round" or adjust winner count.`, 'error');
+            if (currentRoundPrizes.length < winnersCount) {
+                showStatus(`⚠️ Only ${currentRoundPrizes.length} prizes remaining in current round. Click "Go to Next Round" or adjust winner count.`, 'error');
                 updateNextRoundButton();
                 return;
             }
@@ -894,13 +850,13 @@
             if (confirm('Are you sure you want to reset all winners?\n\nThis will:\n✓ Clear all previous winners\n✓ Allow everyone to participate again\n✓ Restore all prizes')) {
                 usedParticipants = [];
                 totalWinnersCount = 0;
-                currentRoundStarted = false;
+                currentRoundIndex = 0;
                 winnersDisplay.innerHTML = '<p>🎲 Spin the wheel to see winners here!</p>';
                 winnersDisplay.classList.add('empty-state');
                 resetBtn.disabled = true;
                 nextRoundBtn.style.display = 'none';
                 spinBtn.disabled = false;
-                initializePrizes();
+                initializeRound();
                 updateRoundDisplay();
                 updateWinnersInfo();
                 showStatus('✅ All winners reset! Everyone can participate again.', 'success');
