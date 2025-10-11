@@ -741,9 +741,8 @@
                 return;
             }
             
-            const currentRoundPrizesCount = getCurrentRoundPrizes().length;
-            if (currentRoundPrizesCount < winnersCount) {
-                showStatus(`⚠️ Only ${currentRoundPrizesCount} prizes remaining in current round. Adjust winner count.`, 'error');
+            if (remainingPrizes.length < winnersCount) {
+                showStatus(`⚠️ Only ${remainingPrizes.length} prizes remaining in total. Adjust winner count or reset.`, 'error');
                 return;
             }
 
