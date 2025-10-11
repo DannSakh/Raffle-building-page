@@ -599,11 +599,20 @@
         }
 
         function updateNextRoundButton() {
-            if (currentRoundStarted && isCurrentRoundComplete() && currentRoundIndex < rounds.length - 1) {
+            const currentRoundPrizesCount = getCurrentRoundPrizes().length;
+            const winnersCount = parseInt(winnerCountSelect.value);
+            
+            if (currentRoundStarted && currentRoundPrizesCount < winnersCount && currentRoundIndex < rounds.length - 1) {
+                nextRoundBtn.style.display = 'inline-block';
+                spinBtn.disabled = true;
+            } else if (currentRoundStarted && currentRoundPrizesCount === 0 && currentRoundIndex < rounds.length - 1) {
                 nextRoundBtn.style.display = 'inline-block';
                 spinBtn.disabled = true;
             } else {
                 nextRoundBtn.style.display = 'none';
+                if (!isSpinning && participants.length > 0 && remainingPrizes.length > 0) {
+                    spinBtn.disabled = false;
+                }
             }
         }
 
@@ -664,6 +673,9 @@
         spinBtn.addEventListener('click', spinWheel);
         resetBtn.addEventListener('click', resetWinners);
         nextRoundBtn.addEventListener('click', goToNextRound);
+        winnerCountSelect.addEventListener('change', function() {
+            updateNextRoundButton();
+        });
 
         function handleFileUpload(event) {
             const file = event.target.files[0];
@@ -804,7 +816,8 @@
             }
             
             if (currentRoundPrizesCount < winnersCount) {
-                showStatus(`⚠️ Only ${currentRoundPrizesCount} prizes remaining in current round. Adjust winner count or finish round.`, 'error');
+                showStatus(`⚠️ Only ${currentRoundPrizesCount} prizes remaining in current round. Click "Go to Next Round" or adjust winner count.`, 'error');
+                updateNextRoundButton();
                 return;
             }
 
@@ -845,7 +858,6 @@
                 updateRoundDisplay();
                 
                 isSpinning = false;
-                spinBtn.disabled = false;
                 wheel.classList.remove('spinning');
                 resetBtn.disabled = false;
                 updateWinnersInfo();
