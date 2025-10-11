@@ -186,23 +186,34 @@
             border-left: 5px solid #e74c3c;
         }
 
-        .prizes-list {
+        .round-info {
             background: #f0f4ff;
             border-left: 5px solid #667eea;
             padding: 20px;
             border-radius: 10px;
         }
 
-        .prizes-list h3 {
+        .round-info h3 {
             color: #4a5568;
             margin-bottom: 15px;
-            font-size: 1.3em;
+            font-size: 1.4em;
+            line-height: 1.4;
         }
 
-        .prizes-list p {
+        .round-info p {
             color: #2d3748;
             padding: 5px 0;
             font-size: 0.95em;
+            margin-left: 15px;
+        }
+
+        .round-info .total-left {
+            color: #4299e1;
+            font-weight: bold;
+            margin-top: 15px;
+            margin-left: 0;
+            padding-top: 15px;
+            border-top: 2px solid #e2e8f0;
         }
 
         .wheel-container {
@@ -429,7 +440,7 @@
                     </div>
                 </div>
 
-                <div id="prizesList" class="prizes-list" style="display: none;"></div>
+                <div id="roundInfo" class="round-info" style="display: none;"></div>
 
                 <div class="wheel-container">
                     <div id="wheel" class="wheel">
@@ -456,20 +467,54 @@
         let isSpinning = false;
         let usedParticipants = [];
         let totalWinnersCount = 0;
+        let currentRoundIndex = 0;
         
-        let prizes = [
-            { name: 'Smartphone Samsung A05s', count: 5 },
-            { name: 'Samsung Tab A9+', count: 5 },
-            { name: 'Galaxy Bud Pro 3', count: 5 },
-            { name: 'Galaxy Watch 7', count: 5 },
-            { name: 'Samsung Tab S10 FE', count: 10 },
-            { name: 'iPad', count: 3 },
-            { name: 'Samsung Tab A8', count: 1 },
-            { name: 'Smartwatch Lenovo S2 PRO', count: 2 },
-            { name: 'Galaxy Watch 4', count: 2 },
-            { name: 'Smartphone Oppo A18', count: 2 },
-            { name: 'Swiss Military DOM Watch', count: 3 },
-            { name: 'Smartphone Redmi 13C', count: 2 }
+        const rounds = [
+            {
+                title: "🏁 Round 1: Pocket Power – Look, Think, Act!",
+                subtitle: "📱 Small gadgets, big awareness — start your SwitchOn moment!",
+                prizes: [
+                    { name: 'Smartphone Samsung A05s', count: 5 },
+                    { name: 'Smartphone Oppo A18', count: 2 },
+                    { name: 'Smartphone Redmi 13C', count: 2 },
+                    { name: 'Smartwatch Lenovo S2 PRO', count: 1 }
+                ]
+            },
+            {
+                title: "🔊 Round 2: Mindful Beats",
+                subtitle: "🎧 Tune in, stay present, move smartly with headphones and watches.",
+                prizes: [
+                    { name: 'Galaxy Buds Pro 3', count: 5 },
+                    { name: 'Swiss Military DOM Watch', count: 3 },
+                    { name: 'Smartwatch Lenovo S2 PRO', count: 1 },
+                    { name: 'Galaxy Watch 4', count: 1 }
+                ]
+            },
+            {
+                title: "📟 Round 3: Screens of Awareness",
+                subtitle: "📱⌚ See, assess, act — tablets and watches to keep you alert.",
+                prizes: [
+                    { name: 'Samsung Tab A9+', count: 5 },
+                    { name: 'Samsung Tab A8', count: 1 },
+                    { name: 'Galaxy Watch 7', count: 3 },
+                    { name: 'Galaxy Watch 4', count: 1 }
+                ]
+            },
+            {
+                title: "🚀 Round 4: Focus Takeoff",
+                subtitle: "🚀 Boost your SwitchOn energy — plan, act, enjoy every moment!",
+                prizes: [
+                    { name: 'Samsung Tab S10 FE', count: 10 }
+                ]
+            },
+            {
+                title: "🏆 Round 5: SwitchOn Grand Finale",
+                subtitle: "🎉 Celebrate being mindful — win a gadget and stay ready in every moment!",
+                prizes: [
+                    { name: 'iPad', count: 3 },
+                    { name: 'Galaxy Watch 7', count: 2 }
+                ]
+            }
         ];
         
         let remainingPrizes = [];
@@ -486,7 +531,7 @@
         const winnersDisplay = document.getElementById('winnersDisplay');
         const winnerCountSelect = document.getElementById('winnerCount');
         const statusMessage = document.getElementById('statusMessage');
-        const prizesList = document.getElementById('prizesList');
+        const roundInfo = document.getElementById('roundInfo');
 
         function showStatus(message, type = 'success') {
             statusMessage.innerHTML = message;
@@ -500,39 +545,62 @@
 
         function initializePrizes() {
             remainingPrizes = [];
-            prizes.forEach(prize => {
-                for (let i = 0; i < prize.count; i++) {
-                    remainingPrizes.push(prize.name);
+            currentRoundIndex = 0;
+            
+            rounds.forEach(round => {
+                round.prizes.forEach(prize => {
+                    for (let i = 0; i < prize.count; i++) {
+                        remainingPrizes.push(prize.name);
+                    }
+                });
+            });
+        }
+
+        function getCurrentRoundPrizes() {
+            const currentRound = rounds[currentRoundIndex];
+            if (!currentRound) return [];
+            
+            const roundPrizeNames = currentRound.prizes.map(p => p.name);
+            return remainingPrizes.filter(prize => roundPrizeNames.includes(prize));
+        }
+
+        function getRandomPrizeFromCurrentRound() {
+            const currentRoundPrizes = getCurrentRoundPrizes();
+            
+            if (currentRoundPrizes.length === 0) {
+                if (currentRoundIndex < rounds.length - 1) {
+                    currentRoundIndex++;
+                    updateRoundDisplay();
+                    return getRandomPrizeFromCurrentRound();
                 }
-            });
-        }
-
-        function getRandomPrize() {
-            if (remainingPrizes.length === 0) return null;
-            const randomIndex = Math.floor(Math.random() * remainingPrizes.length);
-            const prize = remainingPrizes[randomIndex];
-            remainingPrizes.splice(randomIndex, 1);
-            return prize;
-        }
-
-        function updatePrizesDisplay() {
-            const prizeCounts = {};
-            remainingPrizes.forEach(prize => {
-                prizeCounts[prize] = (prizeCounts[prize] || 0) + 1;
-            });
-            
-            prizesList.style.display = 'block';
-            prizesList.innerHTML = '<h3>🎁 Available Prizes:</h3>';
-            
-            Object.keys(prizeCounts).sort().forEach(prize => {
-                prizesList.innerHTML += `<p><strong>${prize}:</strong> ${prizeCounts[prize]}</p>`;
-            });
-            
-            if (remainingPrizes.length === 0) {
-                prizesList.innerHTML += '<p style="color: #e74c3c; font-weight: bold; margin-top: 10px;">❌ No prizes remaining!</p>';
-            } else {
-                prizesList.innerHTML += `<p style="color: #4299e1; font-weight: bold; margin-top: 10px;">Total prizes left: ${remainingPrizes.length}</p>`;
+                return null;
             }
+            
+            const randomIndex = Math.floor(Math.random() * currentRoundPrizes.length);
+            const selectedPrize = currentRoundPrizes[randomIndex];
+            
+            const indexInRemaining = remainingPrizes.indexOf(selectedPrize);
+            remainingPrizes.splice(indexInRemaining, 1);
+            
+            return selectedPrize;
+        }
+
+        function updateRoundDisplay() {
+            const currentRound = rounds[currentRoundIndex];
+            if (!currentRound) return;
+            
+            roundInfo.style.display = 'block';
+            
+            let html = `<h3>${currentRound.title}<br><span style="font-size: 0.85em; font-weight: normal;">${currentRound.subtitle}</span></h3>`;
+            
+            currentRound.prizes.forEach(prize => {
+                const remaining = remainingPrizes.filter(p => p === prize.name).length;
+                html += `<p>• ${prize.name} — ${remaining}</p>`;
+            });
+            
+            html += `<p class="total-left">Total prizes left: ${remainingPrizes.length}</p>`;
+            
+            roundInfo.innerHTML = html;
         }
 
         function updateWinnersInfo() {
@@ -601,7 +669,7 @@
                     winnersDisplay.classList.add('empty-state');
                     updateWinnersInfo();
                     initializePrizes();
-                    updatePrizesDisplay();
+                    updateRoundDisplay();
                     showStatus(`✅ Successfully loaded ${participants.length} participants!`);
 
                 } catch (error) {
@@ -673,8 +741,9 @@
                 return;
             }
             
-            if (remainingPrizes.length < winnersCount) {
-                showStatus(`⚠️ Only ${remainingPrizes.length} prizes remaining. Adjust winner count or reset.`, 'error');
+            const currentRoundPrizesCount = getCurrentRoundPrizes().length;
+            if (currentRoundPrizesCount < winnersCount) {
+                showStatus(`⚠️ Only ${currentRoundPrizesCount} prizes remaining in current round. Adjust winner count.`, 'error');
                 return;
             }
 
@@ -698,7 +767,7 @@
                 const shuffledAvailable = [...availableParticipants].sort(() => Math.random() - 0.5);
                 
                 for (let i = 0; i < winnersCount && i < shuffledAvailable.length; i++) {
-                    const prize = getRandomPrize();
+                    const prize = getRandomPrizeFromCurrentRound();
                     if (prize === null) {
                         showStatus('⚠️ Ran out of prizes mid-draw!', 'error');
                         break;
@@ -712,7 +781,7 @@
 
                 totalWinnersCount += winners.length;
                 displayWinners(winners);
-                updatePrizesDisplay();
+                updateRoundDisplay();
                 
                 isSpinning = false;
                 spinBtn.disabled = false;
@@ -755,7 +824,7 @@
                 winnersDisplay.classList.add('empty-state');
                 resetBtn.disabled = true;
                 initializePrizes();
-                updatePrizesDisplay();
+                updateRoundDisplay();
                 updateWinnersInfo();
                 showStatus('✅ All winners reset! Everyone can participate again.', 'success');
             }
