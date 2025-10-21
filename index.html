@@ -520,10 +520,6 @@
             statusMessage.innerHTML = message;
             statusMessage.className = `status-message status-${type}`;
             statusMessage.style.display = 'block';
-            
-            setTimeout(() => {
-                statusMessage.style.display = 'none';
-            }, 5000);
         }
 
         function initializeAllPrizes() {
