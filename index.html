@@ -245,9 +245,9 @@
             transition: all 0.5s ease;
         }
 
-        /* Колесо скрывается после первого спина */
+        /* Колесо уменьшается после первого спина */
         .main-layout.after-spin .wheel-container {
-            display: none;
+            margin-top: 20px;
         }
 
         .wheel {
@@ -256,9 +256,15 @@
             border-radius: 50%;
             border: 8px solid #2d3748;
             position: relative;
-            transition: transform 4s cubic-bezier(0.17, 0.67, 0.12, 0.99);
+            transition: all 0.5s ease;
             overflow: hidden;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .main-layout.after-spin .wheel {
+            width: 350px;
+            height: 350px;
+            border-width: 6px;
         }
 
         .wheel-segment {
@@ -284,6 +290,12 @@
             z-index: 100;
             box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
             overflow: hidden;
+            transition: all 0.5s ease;
+        }
+
+        .main-layout.after-spin .wheel-center {
+            width: 100px;
+            height: 100px;
         }
 
         .wheel-center img {
@@ -291,6 +303,12 @@
             height: 130px;
             object-fit: contain;
             display: block;
+            transition: all 0.5s ease;
+        }
+
+        .main-layout.after-spin .wheel-center img {
+            width: 85px;
+            height: 85px;
         }
 
         .ready-message {
