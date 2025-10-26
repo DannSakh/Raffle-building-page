@@ -83,17 +83,20 @@
             flex-direction: column;
             gap: 0;
             transition: all 0.5s ease;
+            min-height: 0;
         }
 
         /* В режиме before-spin правая секция центрирует содержимое */
         .main-layout.before-spin .right-section {
             align-items: center;
+            justify-content: flex-start;
             gap: 0;
         }
 
         /* В режиме after-spin правая секция растягивает победителей */
         .main-layout.after-spin .right-section {
             align-items: stretch;
+            justify-content: flex-start;
             gap: 0;
         }
 
@@ -295,6 +298,10 @@
         .wheel {
             width: 500px;
             height: 500px;
+            min-width: 500px;
+            min-height: 500px;
+            max-width: 500px;
+            max-height: 500px;
             border-radius: 50%;
             border: 8px solid #2d3748;
             position: relative;
@@ -306,6 +313,10 @@
         .main-layout.after-spin .wheel {
             width: 400px;
             height: 400px;
+            min-width: 400px;
+            min-height: 400px;
+            max-width: 400px;
+            max-height: 400px;
             border-width: 6px;
         }
 
