@@ -76,8 +76,6 @@
             display: block;
         }
 
-        /* Верхняя информационная панель - УДАЛЕНА */
-
         .right-section {
             display: flex;
             flex-direction: column;
@@ -199,26 +197,6 @@
             background: #95a5a6;
             cursor: not-allowed;
             opacity: 0.6;
-        }
-
-        .next-round-btn {
-            background: linear-gradient(45deg, #10b981, #059669);
-            color: white;
-            border: none;
-            padding: 15px 30px;
-            font-size: 18px;
-            font-weight: bold;
-            border-radius: 10px;
-            cursor: pointer;
-            transition: all 0.3s;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            display: none;
-        }
-
-        .next-round-btn:hover:not(:disabled) {
-            transform: translateY(-3px);
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
         }
 
         .info-panels {
@@ -395,40 +373,41 @@
             gap: 12px;
         }
 
+        /* УВЕЛИЧЕННЫЕ КАРТОЧКИ ПОБЕДИТЕЛЕЙ (вариант B) */
         .winner-card {
             background: rgba(255, 255, 255, 0.95);
             color: #2d3748;
-            padding: 10px 18px;
+            padding: 14px 26px; /* было 10px 18px */
             border-radius: 10px;
             box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
             animation: slideIn 0.5s ease-out;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            gap: 12px;
+            gap: 16px; /* было 12px */
         }
 
         .winner-card .winner-number {
             color: #667eea;
             font-weight: bold;
-            font-size: 1em;
-            min-width: 85px;
+            font-size: 1.4em; /* было 1em */
+            min-width: 110px; /* было 85px */
         }
 
         .winner-card .participant-name {
             flex: 1;
             color: #2d3748;
             font-weight: bold;
-            font-size: 1em;
+            font-size: 1.3em; /* было 1em */
         }
 
         .winner-card .prize-name {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            padding: 5px 12px;
+            padding: 8px 16px; /* было 5px 12px */
             border-radius: 6px;
             font-weight: bold;
-            font-size: 0.9em;
+            font-size: 1.1em; /* было 0.9em */
             white-space: nowrap;
         }
 
@@ -515,7 +494,6 @@
             </div>
 
             <button id="spinBtn" class="spin-btn" disabled>🎲 Spin the Wheel!</button>
-            <button id="nextRoundBtn" class="next-round-btn">🏁 Go to Next Round!</button>
             <button id="resetBtn" class="reset-btn" disabled>🔄 Reset All Winners</button>
         </div>
 
@@ -548,7 +526,7 @@
             </div>
 
             <div id="topInfoBar" class="top-info-bar" style="display: none;">
-                <!-- Удалено - не используется -->
+                <!-- не используется -->
             </div>
 
             <div class="right-section">
@@ -564,52 +542,18 @@
     </div>
 
     <script>
-        const WINNERS_PER_ROUND = 15;
-        
-        const rounds = [
-            {
-                title: "Round 1",
-                prizes: [
-                    { name: 'Power Bank', count: 10 },
-                    { name: 'Smart Watch', count: 5 }
-                ]
-            },
-            {
-                title: "Round 2",
-                prizes: [
-                    { name: 'Power Bank', count: 10 },
-                    { name: 'Smart Watch', count: 5 }
-                ]
-            },
-            {
-                title: "Round 3",
-                prizes: [
-                    { name: 'Power Bank', count: 5 },
-                    { name: 'Smart Watch', count: 10 }
-                ]
-            },
-            {
-                title: "Round 4",
-                prizes: [
-                    { name: 'Suitcase', count: 5 },
-                    { name: 'Tablet', count: 7 },
-                    { name: 'Smart TV', count: 3 }
-                ]
-            }
-        ];
+        const WINNERS_PER_ROUND = 3;
+        const PRIZES = ['Prize 1', 'Prize 2', 'Prize 3'];
 
         let participants = [];
         let usedParticipants = [];
         let totalWinnersCount = 0;
-        let currentRoundIndex = 0;
         let isSpinning = false;
-        let allPrizes = [];
         let hasSpunOnce = false;
-        
+
         const fileInput = document.getElementById('fileInput');
         const spinBtn = document.getElementById('spinBtn');
         const resetBtn = document.getElementById('resetBtn');
-        const nextRoundBtn = document.getElementById('nextRoundBtn');
         const wheel = document.getElementById('wheel');
         const participantsInfo = document.getElementById('participantsInfo');
         const participantCount = document.getElementById('participantCount');
@@ -628,66 +572,18 @@
             statusMessage.style.display = 'block';
         }
 
-        function initializeAllPrizes() {
-            allPrizes = [];
-            rounds.forEach((round, roundIdx) => {
-                round.prizes.forEach(prize => {
-                    for (let i = 0; i < prize.count; i++) {
-                        allPrizes.push({
-                            name: prize.name,
-                            roundIndex: roundIdx
-                        });
-                    }
-                });
-            });
-        }
-
-        function getCurrentRoundPrizes() {
-            return allPrizes.filter(p => p.roundIndex === currentRoundIndex);
-        }
-
-        function getRemainingPrizesInRound() {
-            return getCurrentRoundPrizes().length;
-        }
-
-        function getRandomPrizeFromCurrentRound() {
-            const roundPrizes = getCurrentRoundPrizes();
-            if (roundPrizes.length === 0) return null;
-            
-            const randomIndex = Math.floor(Math.random() * roundPrizes.length);
-            const selectedPrize = roundPrizes[randomIndex];
-            
-            const indexInAll = allPrizes.findIndex(p => 
-                p.name === selectedPrize.name && p.roundIndex === currentRoundIndex
-            );
-            
-            if (indexInAll !== -1) {
-                allPrizes.splice(indexInAll, 1);
+        function initializeRaffleInfo() {
+            if (participants.length === 0) {
+                roundInfo.style.display = 'none';
+                return;
             }
-            
-            return selectedPrize.name;
-        }
 
-        function updateRoundDisplay() {
-            const currentRound = rounds[currentRoundIndex];
-            if (!currentRound) return;
-            
             roundInfo.style.display = 'block';
-            
-            let html = `<h3>${currentRound.title}</h3>`;
-            
-            const prizeCounts = {};
-            getCurrentRoundPrizes().forEach(p => {
-                prizeCounts[p.name] = (prizeCounts[p.name] || 0) + 1;
-            });
-            
-            currentRound.prizes.forEach(prize => {
-                const remaining = prizeCounts[prize.name] || 0;
-                html += `<p>• ${prize.name} — ${remaining}</p>`;
-            });
-            
-            html += `<p class="total-left">Total prizes left: ${allPrizes.length}</p>`;
-            
+            let html = `<h3>Raffle Prizes</h3>`;
+            html += `<p>• Prize 1</p>`;
+            html += `<p>• Prize 2</p>`;
+            html += `<p>• Prize 3</p>`;
+            html += `<p class="total-left">Total winners in this raffle: ${WINNERS_PER_ROUND}</p>`;
             roundInfo.innerHTML = html;
         }
 
@@ -696,28 +592,8 @@
                 winnersSoFar.textContent = usedParticipants.length;
                 remainingCount.textContent = participants.length - usedParticipants.length;
                 winnersInfo.style.display = 'block';
-            }
-        }
-
-        function checkAndShowNextRoundButton() {
-            const prizesLeft = getRemainingPrizesInRound();
-            
-            if (prizesLeft === 0 && currentRoundIndex < rounds.length - 1) {
-                nextRoundBtn.style.display = 'inline-block';
-                spinBtn.disabled = true;
-                showStatus(`🎉 ${rounds[currentRoundIndex].title} complete! Click "Go to Next Round".`, 'success');
             } else {
-                nextRoundBtn.style.display = 'none';
-            }
-        }
-
-        function goToNextRound() {
-            if (currentRoundIndex < rounds.length - 1) {
-                currentRoundIndex++;
-                nextRoundBtn.style.display = 'none';
-                spinBtn.disabled = false;
-                updateRoundDisplay();
-                showStatus(`✅ ${rounds[currentRoundIndex].title} ready! Click "Spin the Wheel".`, 'success');
+                winnersInfo.style.display = 'none';
             }
         }
 
@@ -733,7 +609,6 @@
         fileInput.addEventListener('change', handleFileUpload);
         spinBtn.addEventListener('click', spinWheel);
         resetBtn.addEventListener('click', resetWinners);
-        nextRoundBtn.addEventListener('click', goToNextRound);
 
         function handleFileUpload(event) {
             const file = event.target.files[0];
@@ -758,7 +633,6 @@
                     participants = [];
                     usedParticipants = [];
                     totalWinnersCount = 0;
-                    currentRoundIndex = 0;
                     hasSpunOnce = false;
 
                     for (let i = 0; i < jsonData.length; i++) {
@@ -789,7 +663,6 @@
                     createWheel();
                     spinBtn.disabled = false;
                     resetBtn.disabled = true;
-                    nextRoundBtn.style.display = 'none';
                     
                     mainLayout.classList.remove('after-spin');
                     mainLayout.classList.add('before-spin');
@@ -797,9 +670,7 @@
                     readyMessage.style.display = 'block';
                     
                     updateWinnersInfo();
-                    
-                    initializeAllPrizes();
-                    updateRoundDisplay();
+                    initializeRaffleInfo();
                     showStatus(`✅ Successfully loaded ${participants.length} participants!`);
 
                 } catch (error) {
@@ -847,24 +718,17 @@
 
         function spinWheel() {
             if (isSpinning || participants.length === 0) return;
+
+            if (usedParticipants.length >= WINNERS_PER_ROUND) {
+                showStatus('🎉 All prizes have already been awarded. Please reset to start again.', 'error');
+                spinBtn.disabled = true;
+                return;
+            }
             
             const availableParticipants = participants.filter(p => !usedParticipants.includes(p));
-            const prizesInRound = getRemainingPrizesInRound();
-            
-            if (prizesInRound === 0) {
-                showStatus('⚠️ Current round complete! Click "Go to Next Round".', 'error');
-                checkAndShowNextRoundButton();
-                return;
-            }
             
             if (availableParticipants.length < WINNERS_PER_ROUND) {
-                showStatus(`⚠️ Only ${availableParticipants.length} participants remaining.`, 'error');
-                return;
-            }
-            
-            if (prizesInRound < WINNERS_PER_ROUND) {
-                showStatus(`⚠️ Only ${prizesInRound} prizes left in round. Click "Go to Next Round".`, 'error');
-                checkAndShowNextRoundButton();
+                showStatus(`⚠️ Not enough participants remaining. Need at least ${WINNERS_PER_ROUND}.`, 'error');
                 return;
             }
 
@@ -887,33 +751,33 @@
                 const winners = [];
                 const shuffledAvailable = [...availableParticipants].sort(() => Math.random() - 0.5);
                 
-                for (let i = 0; i < WINNERS_PER_ROUND && i < shuffledAvailable.length; i++) {
-                    const prize = getRandomPrizeFromCurrentRound();
-                    if (prize === null) break;
-                    
+                for (let i = 0; i < WINNERS_PER_ROUND; i++) {
+                    const participant = shuffledAvailable[i];
+                    const prize = PRIZES[i]; // Prize 1, Prize 2, Prize 3
+
                     winners.push({
-                        participant: shuffledAvailable[i],
+                        participant: participant,
                         prize: prize
                     });
-                    usedParticipants.push(shuffledAvailable[i]);
+                    usedParticipants.push(participant);
                 }
 
                 totalWinnersCount += winners.length;
                 
                 switchToAfterSpinLayout();
                 displayWinners(winners);
-                updateRoundDisplay();
                 
                 isSpinning = false;
                 wheel.classList.remove('spinning');
                 resetBtn.disabled = false;
                 updateWinnersInfo();
                 
-                checkAndShowNextRoundButton();
-                
-                if (getRemainingPrizesInRound() > 0) {
+                if (usedParticipants.length >= WINNERS_PER_ROUND) {
+                    spinBtn.disabled = true;
+                    showStatus(`🎉 ${WINNERS_PER_ROUND} winners selected! All prizes awarded.`, 'success');
+                } else {
                     spinBtn.disabled = false;
-                    showStatus(`🎉 Congratulations to ${winners.length} winners!`);
+                    showStatus(`🎉 ${winners.length} winners selected!`, 'success');
                 }
             }, 4000);
         }
@@ -943,7 +807,6 @@
             if (confirm('Are you sure you want to reset all winners?\n\nThis will:\n✓ Clear all previous winners\n✓ Allow everyone to participate again\n✓ Restore all prizes')) {
                 usedParticipants = [];
                 totalWinnersCount = 0;
-                currentRoundIndex = 0;
                 hasSpunOnce = false;
                 
                 mainLayout.classList.remove('after-spin');
@@ -953,11 +816,9 @@
                 readyMessage.style.display = 'block';
                 
                 resetBtn.disabled = true;
-                nextRoundBtn.style.display = 'none';
-                spinBtn.disabled = false;
-                initializeAllPrizes();
-                updateRoundDisplay();
+                spinBtn.disabled = (participants.length === 0);
                 updateWinnersInfo();
+                initializeRaffleInfo();
                 showStatus('✅ All winners reset! Everyone can participate again.', 'success');
             }
         }
