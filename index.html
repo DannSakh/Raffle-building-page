@@ -784,13 +784,14 @@
                 resetBtn.disabled = false;
                 updateWinnersInfo();
                 
-                if (usedParticipants.length >= WINNERS_PER_ROUND) {
-                    spinBtn.disabled = true;
-                    showStatus(`🎉 ${WINNERS_PER_ROUND} winners selected! All prizes awarded.`, 'success');
-                } else {
-                    spinBtn.disabled = false;
-                    showStatus(`🎉 ${winners.length} winners selected!`, 'success');
-                }
+if (availableParticipants.length < WINNERS_PER_ROUND) {
+    spinBtn.disabled = true;
+    showStatus(`⚠️ Not enough participants remaining to award another set of ${WINNERS_PER_ROUND} prizes. Please reset or upload a new list.`, 'error');
+} else {
+    // Кнопка остается активной, пока хватает участников для следующего раунда.
+    spinBtn.disabled = false;
+    showStatus(`🎉 ${winners.length} winners selected! The wheel is ready for the next set of prizes.`, 'success');
+}
             }, 4000);
         }
 
