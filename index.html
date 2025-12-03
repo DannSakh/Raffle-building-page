@@ -367,47 +367,48 @@
             text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
         }
 
-        #winnersContainer {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-        }
+/* ОДНА колонка, крупные карточки, вариант A */
+#winnersContainer {
+    display: grid;
+    grid-template-columns: 1fr;   /* одна карточка в ряд */
+    gap: 18px;
+}
 
-        .winner-card {
-            background: rgba(255, 255, 255, 0.95);
-            color: #2d3748;
-            padding: 14px 26px;
-            border-radius: 10px;
-            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
-            animation: slideIn 0.5s ease-out;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 16px;
-        }
+.winner-card {
+    background: rgba(255, 255, 255, 0.95);
+    color: #2d3748;
+    padding: 22px 30px;
+    border-radius: 12px;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+    animation: slideIn 0.5s ease-out;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 25px;
+}
 
-        .winner-card .winner-number {
-            color: #667eea;
-            font-weight: bold;
-            font-size: 1.4em;
-            min-width: 110px;
-        }
+.winner-card .winner-number {
+    color: #667eea;
+    font-weight: bold;
+    font-size: 1.8em;   /* крупнее */
+    min-width: 150px;   /* шире под "Winner X" */
+}
 
-        .winner-card .participant-name {
-            flex: 1;
-            color: #2d3748;
-            font-weight: bold;
-            font-size: 1.3em;
-        }
+.winner-card .participant-name {
+    flex: 1;
+    color: #2d3748;
+    font-weight: bold;
+    font-size: 1.6em;   /* крупнее имя */
+}
 
-        .winner-card .prize-name {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 8px 16px;
-            border-radius: 6px;
-            font-weight: bold;
-            font-size: 1.1em;
-            white-space: nowrap;
+.winner-card .prize-name {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 12px 22px;  /* крупнее плашка */
+    border-radius: 8px;
+    font-weight: bold;
+    font-size: 1.4em;    /* крупнее текст приза */
+    white-space: nowrap;
         }
 
         @keyframes slideIn {
