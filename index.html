@@ -729,9 +729,7 @@
 
         function spinWheel() {
             if (isSpinning || participants.length === 0) return;
-
-            }
-            
+                     
             const availableParticipants = participants.filter(p => !usedParticipants.includes(p));
             
             if (availableParticipants.length < WINNERS_PER_ROUND) {
