@@ -7,7 +7,11 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
         body {
             font-family: 'Arial', sans-serif;
@@ -33,33 +37,62 @@
             transition: all 0.5s ease;
         }
 
-        .main-layout.before-spin { grid-template-columns: 400px 1fr; }
-        .main-layout.after-spin  { grid-template-columns: 450px 1fr; }
+        .main-layout.before-spin {
+            grid-template-columns: 400px 1fr;
+        }
 
-        .left-section { display: flex; flex-direction: column; gap: 20px; }
+        .main-layout.after-spin {
+            grid-template-columns: 450px 1fr;
+        }
+
+        .left-section {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
 
         .right-section {
             display: flex;
             flex-direction: column;
-            transition: 0.5s;
+            gap: 0;
+            transition: all 0.5s ease;
             min-height: 0;
         }
 
-        /* FORCE winners-display to stretch full width in AFTER SPIN */
-        .main-layout.after-spin .right-section {
-            align-items: stretch !important;
+        .main-layout.before-spin .right-section {
+            align-items: center;
+            justify-content: flex-start;
         }
 
-        .header { text-align: center; margin-bottom: 20px; }
-        .header h1 { font-size: 2.5em; color:#4a5568; }
+        .main-layout.after-spin .right-section {
+            align-items: stretch;
+            justify-content: flex-start;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .header h1 {
+            color: #4a5568;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
 
         .controls {
             display: flex;
             gap: 20px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            align-items: center;
             justify-content: center;
         }
 
-        .file-upload input { display: none; }
+        .file-upload input[type="file"] {
+            position: absolute;
+            left: -9999px;
+        }
 
         .file-upload label {
             background: #4299e1;
@@ -67,26 +100,53 @@
             padding: 12px 24px;
             border-radius: 8px;
             cursor: pointer;
+            transition: 0.3s;
             font-weight: bold;
         }
 
         .spin-btn, .reset-btn {
             padding: 15px 30px;
-            border-radius: 10px;
-            border: none;
             font-size: 18px;
             font-weight: bold;
+            border-radius: 10px;
             cursor: pointer;
+            transition: 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: white;
+            border: none;
         }
 
         .spin-btn {
             background: linear-gradient(45deg, #ff6b6b, #feca57);
-            color: white;
         }
 
         .reset-btn {
             background: linear-gradient(45deg, #e74c3c, #c0392b);
-            color: white;
+        }
+
+        .participants-info,
+        .winners-info {
+            padding: 12px;
+            border-radius: 10px;
+            font-size: 0.95em;
+        }
+
+        .participants-info {
+            background: #f7fafc;
+            border-left: 5px solid #4299e1;
+        }
+
+        .winners-info {
+            background: #fff5f5;
+            border-left: 5px solid #e74c3c;
+        }
+
+        .round-info {
+            background: #f0f4ff;
+            border-left: 5px solid #667eea;
+            padding: 20px;
+            border-radius: 10px;
         }
 
         .wheel-container {
@@ -102,101 +162,126 @@
             height: 400px;
             border-radius: 50%;
             border: 6px solid #2d3748;
-            position: relative;
             overflow: hidden;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            position: relative;
+            transition: 0.5s;
         }
 
         .wheel-segment {
             position: absolute;
             width: 100%;
             height: 100%;
+            transform-origin: center;
         }
 
         .wheel-center {
             position: absolute;
-            top: 50%; left: 50%;
+            top: 50%;
+            left: 50%;
             transform: translate(-50%, -50%);
-            width: 110px; height: 110px;
-            background: white;
+            width: 110px;
+            height: 110px;
             border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            box-shadow: 0 0 20px rgba(0,0,0,0.3);
-            z-index: 10;
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
         }
 
-        .wheel-center img { width: 95px; height: 95px; object-fit: contain; }
+        .wheel-center img {
+            width: 95px;
+            height: 95px;
+            object-fit: contain;
+        }
+
+        .ready-message {
+            text-align: center;
+            font-size: 1.8em;
+            color: #667eea;
+            margin: 20px 0;
+        }
 
         .winners-display {
             padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             border-radius: 15px;
-            background: white;
-            min-height: 200px;
+            color: white;
+            width: 100%;
         }
 
-        /* ============== NEW WINNER CARD DESIGN (Variant A) ============== */
+        .winners-display h2 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
 
+        /* ===============================
+           WINNER CARDS — VARIANT A
+           =============================== */
         #winnersContainer {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-            width: 100%;
-        }
-
-        .winner-card {
-            width: 100%;
-            padding: 22px 28px;
-            border-radius: 14px;
-            background: rgba(255,255,255,0.97);
-            box-shadow: 0 4px 14px rgba(0,0,0,0.16);
-            display: flex;
-            flex-direction: column;
+            display: grid;
+            grid-template-columns: 1fr;
             gap: 18px;
         }
 
-        /* Top row: Winner X (left) & Name (right) */
-        .winner-row {
+        .winner-card {
+            background: rgba(255, 255, 255, 0.95);
+            color: #2d3748;
+            padding: 22px 30px;
+            border-radius: 12px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
             display: flex;
-            justify-content: space-between;
             align-items: center;
-            width: 100%;
+            gap: 25px;
         }
 
-        .winner-number {
-            font-size: 1.6em;
-            font-weight: bold;
+        .winner-card .winner-number {
             color: #667eea;
+            font-weight: bold;
+            font-size: 1.8em;
+            min-width: 150px;
+        }
+
+        .winner-card .participant-name {
+            flex: 1;
+            font-weight: bold;
+            font-size: 1.6em;
+        }
+
+        .winner-card .prize-name {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 22px;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 1.4em;
             white-space: nowrap;
         }
 
-        .participant-name {
-            font-size: 1.6em;
-            font-weight: bold;
-            color: #2d3748;
-            text-align: right;
-            margin-left: 20px;
-            flex: 1;
-        }
-
-        /* Prize – large centered block (Variant A) */
-        .prize-box {
-            width: 75%;
-            margin: 0 auto;
-            padding: 16px 22px;
+        .status-message {
+            display: none;
+            margin: 15px 0;
             text-align: center;
-            font-size: 1.8em;
+            padding: 12px;
+            border-radius: 8px;
             font-weight: bold;
-            color: white;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: 12px;
         }
 
+        .status-success {
+            background: #c6f6d5;
+            color: #22543d;
+        }
+
+        .status-error {
+            background: #fed7d7;
+            color: #742a2a;
+        }
     </style>
 </head>
 
 <body>
-<div class="container">
 
+<div class="container">
     <div class="header">
         <h1>🏆 Village Heroes Raffle</h1>
         <p>Upload participants and spin to win!</p>
@@ -204,34 +289,35 @@
 
     <div class="controls">
         <div class="file-upload">
-            <input id="fileInput" type="file" accept=".xlsx,.xls" />
+            <input type="file" id="fileInput" accept=".xlsx,.xls" />
             <label for="fileInput">📁 Upload Excel File</label>
         </div>
 
-        <button id="spinBtn" class="spin-btn" disabled>🎲 Spin</button>
-        <button id="resetBtn" class="reset-btn" disabled>Reset</button>
+        <button id="spinBtn" class="spin-btn" disabled>🎲 Spin the Wheel!</button>
+        <button id="resetBtn" class="reset-btn" disabled>🔄 Reset All Winners</button>
     </div>
+
+    <div id="statusMessage" class="status-message"></div>
 
     <div id="mainLayout" class="main-layout before-spin">
         <div class="left-section">
 
-            <div id="participantsInfo" style="display:none;">
-                <strong>Total Participants:</strong>
-                <span id="participantCount">0</span><br>
-            </div>
+            <div class="info-panels">
+                <div id="participantsInfo" class="participants-info" style="display:none;">
+                    <p><strong>Total Participants:</strong> <span id="participantCount">0</span></p>
+                </div>
 
-            <div id="winnersInfo" style="display:none;">
-                <strong>Winners so far:</strong>
-                <span id="winnersSoFar">0</span> |
-                <strong>Remaining:</strong>
-                <span id="remainingCount">0</span>
+                <div id="winnersInfo" class="winners-info" style="display:none;">
+                    <p><strong>Winners so far:</strong> <span id="winnersSoFar">0</span> |
+                    <strong>Remaining:</strong> <span id="remainingCount">0</span></p>
+                </div>
             </div>
 
             <div id="roundInfo" class="round-info" style="display:none;"></div>
 
             <div class="wheel-container">
                 <div id="wheel" class="wheel">
-                    <div style="text-align:center;margin-top:180px;color:#666;">
+                    <div style="display:flex;align-items:center;justify-content:center;height:100%;font-size:18px;color:#666;">
                         Upload participants to start
                     </div>
                 </div>
@@ -240,10 +326,13 @@
                     <img src="logo.png" alt="" onerror="this.style.display='none'">
                 </div>
             </div>
-
         </div>
 
         <div class="right-section">
+            <div id="readyMessage" class="ready-message" style="display:none;">
+                🎯 Ready to spin! 🎯
+            </div>
+
             <div id="winnersDisplay" class="winners-display">
                 <p>🎲 Spin the wheel to see winners here!</p>
             </div>
@@ -251,186 +340,280 @@
     </div>
 </div>
 
-
 <script>
-/* CONFIG */
+/* SETTINGS */
 const WINNERS_PER_ROUND = 3;
-const PRIZES = ["500 QAR", "250 QAR", "250 QAR"];
+const PRIZES = ['500 QAR', '250 QAR', '250 QAR'];
 
 let participants = [];
 let usedParticipants = [];
+let totalWinnersCount = 0;
 let isSpinning = false;
+let hasSpunOnce = false;
 
-const fileInput = document.getElementById("fileInput");
-const spinBtn = document.getElementById("spinBtn");
-const resetBtn = document.getElementById("resetBtn");
-const wheel = document.getElementById("wheel");
-const winnersDisplay = document.getElementById("winnersDisplay");
-const participantCount = document.getElementById("participantCount");
-const winnersSoFar = document.getElementById("winnersSoFar");
-const remainingCount = document.getElementById("remainingCount");
-const participantsInfo = document.getElementById("participantsInfo");
-const winnersInfo = document.getElementById("winnersInfo");
-const roundInfo = document.getElementById("roundInfo");
+/* DOM */
+const fileInput = document.getElementById('fileInput');
+const spinBtn = document.getElementById('spinBtn');
+const resetBtn = document.getElementById('resetBtn');
+const wheel = document.getElementById('wheel');
+const participantsInfo = document.getElementById('participantsInfo');
+const participantCount = document.getElementById('participantCount');
+const winnersInfo = document.getElementById('winnersInfo');
+const winnersSoFar = document.getElementById('winnersSoFar');
+const remainingCount = document.getElementById('remainingCount');
+const winnersDisplay = document.getElementById('winnersDisplay');
+const statusMessage = document.getElementById('statusMessage');
+const roundInfo = document.getElementById('roundInfo');
+const mainLayout = document.getElementById('mainLayout');
+const readyMessage = document.getElementById('readyMessage');
 
+/* STATUS MESSAGE */
+function showStatus(message, type = 'success') {
+    statusMessage.innerHTML = message;
+    statusMessage.className = `status-message status-${type}`;
+    statusMessage.style.display = 'block';
+}
+
+/* PRIZE LIST */
+function initializeRaffleInfo() {
+    if (participants.length === 0) {
+        roundInfo.style.display = 'none';
+        return;
+    }
+
+    roundInfo.style.display = 'block';
+    let html = `<h3>Raffle Prizes</h3>`;
+    html += `<p>• 500 QAR</p>`;
+    html += `<p>• 250 QAR</p>`;
+    html += `<p>• 250 QAR</p>`;
+    html += `<p class="total-left">Total winners in this raffle: ${WINNERS_PER_ROUND}</p>`;
+    roundInfo.innerHTML = html;
+}
+
+/* UPDATE COUNTERS */
+function updateWinnersInfo() {
+    if (participants.length > 0) {
+        winnersSoFar.textContent = usedParticipants.length;
+        remainingCount.textContent = participants.length - usedParticipants.length;
+        winnersInfo.style.display = 'block';
+    }
+}
+
+/* LAYOUT SWITCH */
+function switchToAfterSpinLayout() {
+    if (!hasSpunOnce) {
+        hasSpunOnce = true;
+        mainLayout.classList.remove('before-spin');
+        mainLayout.classList.add('after-spin');
+        readyMessage.style.display = 'none';
+    }
+}
 
 /* FILE UPLOAD */
-fileInput.addEventListener("change", handleFileUpload);
+fileInput.addEventListener('change', handleFileUpload);
 
-function handleFileUpload(e) {
-    const file = e.target.files[0];
+function handleFileUpload(event) {
+    const file = event.target.files[0];
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = function(ev) {
-        const data = new Uint8Array(ev.target.result);
-        const workbook = XLSX.read(data, { type: "array" });
-        const sheet = workbook.Sheets[workbook.SheetNames[0]];
-        const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+    reader.onload = function(e) {
+        try {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+            const sheet = workbook.Sheets[workbook.SheetNames[0]];
+            const json = XLSX.utils.sheet_to_json(sheet, { header: 1 });
 
-        participants = [];
-        usedParticipants = [];
+            participants = [];
+            usedParticipants = [];
+            totalWinnersCount = 0;
+            hasSpunOnce = false;
 
-        rows.forEach(row => {
-            if (row && row.some(c => c !== undefined && c !== "")) {
-                participants.push({
-                    displayText: row.filter(c=>c).join(" | "),
-                    rawData: row
-                });
-            }
-        });
+            json.forEach(row => {
+                if (row && row.some(cell => cell !== undefined && cell !== "")) {
+                    const text = row.filter(c => c !== undefined && c !== "")
+                                    .map(c => c.toString().trim())
+                                    .join(" | ");
+                    if (text) participants.push({ displayText: text, rawData: row });
+                }
+            });
 
-        participantCount.textContent = participants.length;
-        participantsInfo.style.display = "block";
-        winnersInfo.style.display = "block";
+            participantCount.textContent = participants.length;
+            participantsInfo.style.display = 'block';
 
-        roundInfo.style.display = "block";
-        roundInfo.innerHTML = `
-            <h3>Raffle Prizes</h3>
-            <p>• 500 QAR</p>
-            <p>• 250 QAR</p>
-            <p>• 250 QAR</p>
-        `;
+            createWheel();
+            spinBtn.disabled = false;
+            resetBtn.disabled = true;
 
-        createWheel();
-        spinBtn.disabled = false;
-        resetBtn.disabled = true;
+            mainLayout.classList.remove('after-spin');
+            mainLayout.classList.add('before-spin');
 
-        winnersDisplay.innerHTML = "<p>🎲 Spin the wheel to see winners here!</p>";
+            winnersDisplay.innerHTML = '<p>🎲 Spin the wheel to see winners here!</p>';
+            readyMessage.style.display = 'block';
+
+            updateWinnersInfo();
+            initializeRaffleInfo();
+            showStatus(`Loaded ${participants.length} participants!`);
+
+        } catch (err) {
+            showStatus("Error reading Excel file", "error");
+        }
     };
+
     reader.readAsArrayBuffer(file);
 }
 
-
-/* WHEEL SEGMENTS */
+/* CREATE WHEEL */
 function createWheel() {
+    const colors = [
+        '#ff6b6b','#4ecdc4','#45b7d1','#96ceb4','#ffeaa7','#dda0dd',
+        '#98d8c8','#f7dc6f','#bb8fce','#85c1e9','#ff8a80','#82b1ff',
+        '#b9f6ca','#ffff8d','#ff80ab','#ea80fc','#80d8ff','#a7ffeb',
+        '#ffd180','#ff9e80'
+    ];
+
     wheel.innerHTML = "";
-    const colors = ["#ff6b6b","#4ecdc4","#45b7d1","#96ceb4","#ffeaa7","#dda0dd",
-                    "#98d8c8","#f7dc6f","#bb8fce","#85c1e9"];
 
-    const count = participants.length;
-    const angle = 360 / count;
+    const n = participants.length;
+    const angle = 360 / n;
 
-    participants.forEach((p, i) => {
-        const seg = document.createElement("div");
-        seg.classList.add("wheel-segment");
+    participants.forEach((_, i) => {
+        const s = document.createElement("div");
+        s.className = "wheel-segment";
 
-        const start = i * angle - 90;
-        const end = (i + 1) * angle - 90;
+        const a1 = (i * angle) - 90;
+        const a2 = ((i + 1) * angle) - 90;
 
-        const x1 = 50 + 50 * Math.cos(start * Math.PI/180);
-        const y1 = 50 + 50 * Math.sin(start * Math.PI/180);
-        const x2 = 50 + 50 * Math.cos(end * Math.PI/180);
-        const y2 = 50 + 50 * Math.sin(end * Math.PI/180);
+        const x1 = 50 + 50 * Math.cos(a1 * Math.PI / 180);
+        const y1 = 50 + 50 * Math.sin(a1 * Math.PI / 180);
+        const x2 = 50 + 50 * Math.cos(a2 * Math.PI / 180);
+        const y2 = 50 + 50 * Math.sin(a2 * Math.PI / 180);
 
-        seg.style.clipPath = `polygon(50% 50%, ${x1}% ${y1}%, ${x2}% ${y2}%)`;
-        seg.style.background = colors[i % colors.length];
+        s.style.clipPath = `polygon(50% 50%, ${x1}% ${y1}%, ${x2}% ${y2}%)`;
+        s.style.backgroundColor = colors[i % colors.length];
 
-        wheel.appendChild(seg);
+        wheel.appendChild(s);
     });
 }
 
-
-/* FISHER–YATES SHUFFLE */
-function shuffle(arr) {
-    let m = arr.length, i;
+/* FAIR SHUFFLE */
+function shuffleFisherYates(arr) {
+    let m = arr.length;
     while (m) {
-        i = Math.floor(Math.random() * m--);
+        const i = Math.floor(Math.random() * m--);
         [arr[m], arr[i]] = [arr[i], arr[m]];
     }
     return arr;
 }
 
-
 /* SPIN */
-spinBtn.addEventListener("click", spinWheel);
+spinBtn.addEventListener('click', spinWheel);
 
 function spinWheel() {
-    if (isSpinning) return;
-    isSpinning = true;
+    if (isSpinning || participants.length === 0) return;
+
+    if (usedParticipants.length >= WINNERS_PER_ROUND) {
+        showStatus("All prizes awarded. Reset required", "error");
+        spinBtn.disabled = true;
+        return;
+    }
 
     const available = participants.filter(p => !usedParticipants.includes(p));
-    const shuffled = shuffle([...available]);
-    const winners = shuffled.slice(0, WINNERS_PER_ROUND);
 
-    winners.forEach(w => usedParticipants.push(w));
+    if (available.length < WINNERS_PER_ROUND) {
+        showStatus("Not enough participants left", "error");
+        return;
+    }
 
-    winnersSoFar.textContent = usedParticipants.length;
-    remainingCount.textContent = participants.length - usedParticipants.length;
+    isSpinning = true;
+    spinBtn.disabled = true;
 
-    const rotation = 360 * (5 + Math.random()*3);
-    wheel.style.transition = "4s cubic-bezier(0.17,0.67,0.12,0.99)";
-    wheel.style.transform = `rotate(${rotation}deg)`;
+    const spins = 5 + Math.floor(Math.random() * 3);
+    const extra = Math.random() * 360;
+    const final = spins * 360 + extra;
+
+    const cur = parseFloat(wheel.style.transform.replace("rotate(", "").replace("deg)", "")) || 0;
+    const total = cur + final;
+
+    wheel.style.transition = "transform 4s cubic-bezier(0.17, 0.67, 0.12, 0.99)";
+    wheel.style.transform = `rotate(${total}deg)`;
 
     setTimeout(() => {
-        displayWinners(winners);
-        resetBtn.disabled = false;
-        isSpinning = false;
+        const shuffled = shuffleFisherYates([...available]);
+        const winners = [];
 
-        document.getElementById("mainLayout")
-            .classList.remove("before-spin");
-        document.getElementById("mainLayout")
-            .classList.add("after-spin");
+        for (let i = 0; i < WINNERS_PER_ROUND; i++) {
+            winners.push({
+                participant: shuffled[i],
+                prize: PRIZES[i]
+            });
+            usedParticipants.push(shuffled[i]);
+        }
+
+        totalWinnersCount += winners.length;
+
+        switchToAfterSpinLayout();
+        displayWinners(winners);
+        updateWinnersInfo();
+
+        isSpinning = false;
+        resetBtn.disabled = false;
+
+        if (usedParticipants.length >= WINNERS_PER_ROUND) {
+            spinBtn.disabled = true;
+            showStatus("All prizes awarded!", "success");
+        } else {
+            spinBtn.disabled = false;
+            showStatus(`${winners.length} winners selected!`);
+        }
 
     }, 4000);
 }
 
-
-/* DISPLAY WINNERS (Variant A) */
+/* WINNER LIST — VARIANT A */
 function displayWinners(winners) {
-    winnersDisplay.innerHTML = `<h2>🎉 Winners! 🎉</h2><div id="winnersContainer"></div>`;
-    const container = document.getElementById("winnersContainer");
+    winnersDisplay.innerHTML = `
+        <h2>🎉 Winners! 🎉</h2>
+        <div id="winnersContainer"></div>
+    `;
+
+    const container = document.getElementById('winnersContainer');
 
     winners.forEach((winnerObj, index) => {
+        const n = totalWinnersCount - winners.length + index + 1;
+
         const card = document.createElement("div");
         card.className = "winner-card";
 
-        const number = index + 1;
-
         card.innerHTML = `
-            <div class="winner-row">
-                <span class="winner-number">🏆 Winner ${number}</span>
-                <span class="participant-name">${winnerObj.displayText}</span>
-            </div>
-
-            <div class="prize-box">🎁 ${PRIZES[index]}</div>
+            <span class="winner-number">🏆 Winner ${n}</span>
+            <span class="participant-name">${winnerObj.participant.displayText}</span>
+            <span class="prize-name">${winnerObj.prize}</span>
         `;
 
         container.appendChild(card);
     });
 }
 
-
 /* RESET */
-resetBtn.addEventListener("click", () => {
+resetBtn.addEventListener('click', resetWinners);
+
+function resetWinners() {
+    if (!confirm("Reset all winners?")) return;
+
     usedParticipants = [];
-    winnersDisplay.innerHTML = "<p>🎲 Spin the wheel to see winners here!</p>";
-    winnersSoFar.textContent = 0;
-    remainingCount.textContent = participants.length;
+    totalWinnersCount = 0;
+    hasSpunOnce = false;
+
+    mainLayout.classList.remove('after-spin');
+    mainLayout.classList.add('before-spin');
+
+    winnersDisplay.innerHTML = '<p>🎲 Spin the wheel to see winners here!</p>';
+    readyMessage.style.display = 'block';
+
     resetBtn.disabled = true;
-});
+    spinBtn.disabled = participants.length === 0;
 
-</script>
-
-</body>
-</html>
+    updateWinnersInfo();
+    initializeRaffleInfo();
+    showStatus("All winners r
