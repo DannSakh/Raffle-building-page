@@ -41,9 +41,13 @@
         .right-section {
             display: flex;
             flex-direction: column;
-            gap: 0;
             transition: 0.5s;
             min-height: 0;
+        }
+
+        /* FORCE winners-display to stretch full width in AFTER SPIN */
+        .main-layout.after-spin .right-section {
+            align-items: stretch !important;
         }
 
         .header { text-align: center; margin-bottom: 20px; }
@@ -126,25 +130,17 @@
         .winners-display {
             padding: 20px;
             border-radius: 15px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+            background: white;
+            min-height: 200px;
         }
 
-        .main-layout.before-spin .winners-display {
-            background: #f7fafc;
-            border: 2px dashed #cbd5e0;
-            color: #a0aec0;
-            font-weight: bold;
-            display: flex; justify-content: center; align-items: center;
-            height: 200px;
-        }
-
-        /* ====================== NEW WINNER CARD DESIGN ======================= */
+        /* ============== NEW WINNER CARD DESIGN (Variant A) ============== */
 
         #winnersContainer {
             display: flex;
             flex-direction: column;
             gap: 20px;
+            width: 100%;
         }
 
         .winner-card {
@@ -156,19 +152,21 @@
             display: flex;
             flex-direction: column;
             gap: 18px;
-            animation: slideIn 0.5s ease-out;
         }
 
+        /* Top row: Winner X (left) & Name (right) */
         .winner-row {
             display: flex;
             justify-content: space-between;
             align-items: center;
+            width: 100%;
         }
 
         .winner-number {
             font-size: 1.6em;
             font-weight: bold;
             color: #667eea;
+            white-space: nowrap;
         }
 
         .participant-name {
@@ -176,23 +174,21 @@
             font-weight: bold;
             color: #2d3748;
             text-align: right;
+            margin-left: 20px;
+            flex: 1;
         }
 
+        /* Prize – large centered block (Variant A) */
         .prize-box {
             width: 75%;
             margin: 0 auto;
-            padding: 14px 22px;
+            padding: 16px 22px;
             text-align: center;
             font-size: 1.8em;
             font-weight: bold;
             color: white;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             border-radius: 12px;
-        }
-
-        @keyframes slideIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to   { opacity: 1; transform: translateY(0); }
         }
 
     </style>
@@ -219,26 +215,23 @@
     <div id="mainLayout" class="main-layout before-spin">
         <div class="left-section">
 
-            <div class="info-panels">
-                <div id="participantsInfo" class="participants-info" style="display:none;">
-                    <strong>Total Participants:</strong>
-                    <span id="participantCount">0</span>
-                </div>
+            <div id="participantsInfo" style="display:none;">
+                <strong>Total Participants:</strong>
+                <span id="participantCount">0</span><br>
+            </div>
 
-                <div id="winnersInfo" class="winners-info" style="display:none;">
-                    <strong>Winners so far:</strong>
-                    <span id="winnersSoFar">0</span>
-                    |
-                    <strong>Remaining:</strong>
-                    <span id="remainingCount">0</span>
-                </div>
+            <div id="winnersInfo" style="display:none;">
+                <strong>Winners so far:</strong>
+                <span id="winnersSoFar">0</span> |
+                <strong>Remaining:</strong>
+                <span id="remainingCount">0</span>
             </div>
 
             <div id="roundInfo" class="round-info" style="display:none;"></div>
 
             <div class="wheel-container">
                 <div id="wheel" class="wheel">
-                    <div style="text-align:center; margin-top:180px; color:#666;">
+                    <div style="text-align:center;margin-top:180px;color:#666;">
                         Upload participants to start
                     </div>
                 </div>
@@ -260,16 +253,13 @@
 
 
 <script>
-/* ================== CONFIG =================== */
-
+/* CONFIG */
 const WINNERS_PER_ROUND = 3;
 const PRIZES = ["500 QAR", "250 QAR", "250 QAR"];
 
 let participants = [];
 let usedParticipants = [];
-let totalWinnersCount = 0;
 let isSpinning = false;
-
 
 const fileInput = document.getElementById("fileInput");
 const spinBtn = document.getElementById("spinBtn");
@@ -284,8 +274,7 @@ const winnersInfo = document.getElementById("winnersInfo");
 const roundInfo = document.getElementById("roundInfo");
 
 
-/* ================== FILE UPLOAD =================== */
-
+/* FILE UPLOAD */
 fileInput.addEventListener("change", handleFileUpload);
 
 function handleFileUpload(e) {
@@ -327,16 +316,13 @@ function handleFileUpload(e) {
         spinBtn.disabled = false;
         resetBtn.disabled = true;
 
-        updateWinnersInfo();
         winnersDisplay.innerHTML = "<p>🎲 Spin the wheel to see winners here!</p>";
     };
     reader.readAsArrayBuffer(file);
 }
 
 
-
-/* ================== WHEEL =================== */
-
+/* WHEEL SEGMENTS */
 function createWheel() {
     wheel.innerHTML = "";
     const colors = ["#ff6b6b","#4ecdc4","#45b7d1","#96ceb4","#ffeaa7","#dda0dd",
@@ -365,22 +351,18 @@ function createWheel() {
 }
 
 
-
-/* ================== FISHER–YATES =================== */
-
-function shuffle(array) {
-    let m = array.length, i;
+/* FISHER–YATES SHUFFLE */
+function shuffle(arr) {
+    let m = arr.length, i;
     while (m) {
         i = Math.floor(Math.random() * m--);
-        [array[m], array[i]] = [array[i], array[m]];
+        [arr[m], arr[i]] = [arr[i], arr[m]];
     }
-    return array;
+    return arr;
 }
 
 
-
-/* ================== SPIN =================== */
-
+/* SPIN */
 spinBtn.addEventListener("click", spinWheel);
 
 function spinWheel() {
@@ -393,7 +375,8 @@ function spinWheel() {
 
     winners.forEach(w => usedParticipants.push(w));
 
-    updateWinnersInfo();
+    winnersSoFar.textContent = usedParticipants.length;
+    remainingCount.textContent = participants.length - usedParticipants.length;
 
     const rotation = 360 * (5 + Math.random()*3);
     wheel.style.transition = "4s cubic-bezier(0.17,0.67,0.12,0.99)";
@@ -403,13 +386,17 @@ function spinWheel() {
         displayWinners(winners);
         resetBtn.disabled = false;
         isSpinning = false;
+
+        document.getElementById("mainLayout")
+            .classList.remove("before-spin");
+        document.getElementById("mainLayout")
+            .classList.add("after-spin");
+
     }, 4000);
 }
 
 
-
-/* ================== DISPLAY WINNERS =================== */
-
+/* DISPLAY WINNERS (Variant A) */
 function displayWinners(winners) {
     winnersDisplay.innerHTML = `<h2>🎉 Winners! 🎉</h2><div id="winnersContainer"></div>`;
     const container = document.getElementById("winnersContainer");
@@ -434,23 +421,14 @@ function displayWinners(winners) {
 }
 
 
-
-/* ================== RESET =================== */
-
+/* RESET */
 resetBtn.addEventListener("click", () => {
     usedParticipants = [];
     winnersDisplay.innerHTML = "<p>🎲 Spin the wheel to see winners here!</p>";
-    updateWinnersInfo();
+    winnersSoFar.textContent = 0;
+    remainingCount.textContent = participants.length;
     resetBtn.disabled = true;
 });
-
-
-/* ================== UPDATE INFO =================== */
-
-function updateWinnersInfo() {
-    winnersSoFar.textContent = usedParticipants.length;
-    remainingCount.textContent = participants.length - usedParticipants.length;
-}
 
 </script>
 
