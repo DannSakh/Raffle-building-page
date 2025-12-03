@@ -730,10 +730,6 @@
         function spinWheel() {
             if (isSpinning || participants.length === 0) return;
 
-            if (usedParticipants.length >= WINNERS_PER_ROUND) {
-                showStatus('🎉 All prizes have already been awarded. Please reset to start again.', 'error');
-                spinBtn.disabled = true;
-                return;
             }
             
             const availableParticipants = participants.filter(p => !usedParticipants.includes(p));
