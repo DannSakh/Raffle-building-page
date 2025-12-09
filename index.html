@@ -3,481 +3,544 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Village Heroes Raffle</title>
+    <title>Welfare Summit 2025 Raffle</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     
     <style>
+        /* --- RESET & BASE --- */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
             min-height: 100vh;
             padding: 20px;
-            color: #333;
+            color: #2d3748;
         }
+
+        /* --- CONTAINER --- */
         .container {
-            max-width: 1800px;
+            max-width: 1600px;
             margin: 0 auto;
-            background: rgba(255, 255, 255, 0.95);
+            background: white;
             border-radius: 20px;
             padding: 30px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            min-height: 90vh;
+            display: flex;
+            flex-direction: column;
         }
 
-        /* --- Layout Logic --- */
-        .main-layout {
-            display: grid;
-            gap: 30px;
-            margin-top: 30px;
-            transition: all 0.5s ease;
-        }
-        .main-layout.before-spin { grid-template-columns: 400px 1fr; }
-        .main-layout.after-spin { grid-template-columns: 450px 1fr; }
-        
-        .left-section { display: flex; flex-direction: column; gap: 20px; }
-        .right-section { display: flex; flex-direction: column; transition: all 0.5s ease; }
-        .main-layout.before-spin .right-section { align-items: center; justify-content: start; }
-        .main-layout.after-spin .right-section { align-items: stretch; }
+        /* --- HEADER --- */
+        .header { text-align: center; margin-bottom: 25px; border-bottom: 2px solid #edf2f7; padding-bottom: 20px; }
+        .header h1 { font-size: 2.2rem; color: #2c5282; margin-bottom: 5px; }
+        .header p { color: #718096; }
 
-        /* --- Header & Controls --- */
-        .header { text-align: center; margin-bottom: 20px; }
-        .header h1 { color: #2d3748; font-size: 2.5em; margin-bottom: 10px; text-shadow: 1px 1px 2px rgba(0,0,0,0.1); }
-        .controls { display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; justify-content: center; }
-        
+        /* --- CONTROLS BAR --- */
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 30px;
+            padding: 15px;
+            background: #f7fafc;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+        }
+
+        /* --- BUTTONS --- */
         .btn {
-            padding: 12px 24px; border: none; border-radius: 8px; font-size: 16px; font-weight: bold;
-            cursor: pointer; transition: all 0.2s; text-transform: uppercase; letter-spacing: 0.5px;
-            display: flex; align-items: center; gap: 8px;
+            padding: 12px 28px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform 0.1s, box-shadow 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            text-transform: uppercase;
         }
-        .btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none !important; }
-        .btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+        .btn:active { transform: scale(0.98); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
         .btn-upload { background: #4299e1; color: white; }
-        .btn-upload:hover { background: #3182ce; }
+        .btn-spin { 
+            background: linear-gradient(90deg, #ed8936, #f6ad55); 
+            color: white; 
+            min-width: 200px; 
+            justify-content: center;
+            box-shadow: 0 4px 6px rgba(237, 137, 54, 0.3);
+        }
+        .btn-next { background: #48bb78; color: white; display: none; }
+        .btn-download { background: #2d3748; color: white; display: none; }
         
-        .btn-spin { background: linear-gradient(45deg, #ff6b6b, #feca57); color: white; }
-        .btn-reset { background: linear-gradient(45deg, #e74c3c, #c0392b); color: white; }
-        .btn-download { background: #48bb78; color: white; display: none; } /* Скрыта по умолчанию */
-        .btn-download:hover { background: #38a169; }
+        input[type="file"] { display: none; }
 
-        .file-upload-wrapper input[type="file"] { display: none; }
+        /* --- MAIN LAYOUT GRID --- */
+        .game-area {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            flex: 1;
+        }
 
-        /* --- Info Panels --- */
-        .info-panels { display: grid; gap: 15px; }
-        .stat-box { padding: 12px; border-radius: 8px; text-align: center; font-size: 0.9em; }
-        .stat-participants { background: #ebf8ff; border-left: 4px solid #4299e1; }
-        .stat-winners { background: #fff5f5; border-left: 4px solid #e53e3e; }
-        
-        .round-info { background: #f0f4ff; border-left: 5px solid #667eea; padding: 15px; border-radius: 8px; }
-        .round-info h3 { color: #4a5568; margin-bottom: 10px; }
-        .round-info p { margin-left: 10px; padding: 2px 0; }
-        .total-left { border-top: 1px solid #cbd5e0; margin-top: 10px; padding-top: 10px; font-weight: bold; color: #5a67d8; }
+        /* --- LEFT COLUMN: INFO & WHEEL --- */
+        .left-col {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
 
-        /* --- Wheel --- */
-        .wheel-container {
-            width: 100%; height: 400px; display: flex; justify-content: center; align-items: center; position: relative;
+        .round-card {
+            background: #ebf8ff;
+            border: 2px solid #bee3f8;
+            padding: 20px;
+            border-radius: 12px;
+            width: 100%;
+            text-align: center;
+        }
+        .round-title { font-size: 1.4rem; font-weight: bold; color: #2b6cb0; margin-bottom: 10px; }
+        .prize-list { list-style: none; text-align: left; display: inline-block; }
+        .prize-list li { margin: 5px 0; padding-left: 20px; position: relative; }
+        .prize-list li::before { content: '🎁'; position: absolute; left: 0; }
+
+        .wheel-wrapper {
+            position: relative;
+            width: 400px;
+            height: 400px;
+            margin-top: 20px;
         }
         .wheel {
-            width: 380px; height: 380px; border-radius: 50%; border: 8px solid #2d3748;
-            position: relative; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            border: 10px solid #2d3748;
+            position: relative;
+            overflow: hidden;
             transition: transform 4s cubic-bezier(0.17, 0.67, 0.12, 0.99);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
         }
-        .wheel.spinning { filter: blur(1px); }
         .wheel-segment {
-            position: absolute; width: 100%; height: 100%;
+            position: absolute;
+            width: 100%; height: 100%;
             clip-path: polygon(50% 50%, 50% 0%, 100% 0%);
             transform-origin: center;
         }
         .wheel-center {
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            width: 100px; height: 100px; background: white; border-radius: 50%;
-            z-index: 10; box-shadow: 0 0 15px rgba(0,0,0,0.2);
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80px; height: 80px;
+            background: white;
+            border-radius: 50%;
+            z-index: 10;
             display: flex; align-items: center; justify-content: center;
-        }
-        .wheel-center img { width: 80px; height: 80px; object-fit: contain; }
-
-        /* --- Winners Area --- */
-        .winners-display {
-            width: 100%; padding: 20px; background: #f7fafc; border-radius: 15px;
-            min-height: 200px; transition: all 0.3s;
-        }
-        .main-layout.after-spin .winners-display {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            max-height: 700px; overflow-y: auto;
+            font-size: 40px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
         }
 
-        .ready-message {
-            font-size: 2em; color: #667eea; text-align: center; font-weight: bold;
-            animation: pulse 2s infinite; margin-bottom: 20px;
+        /* --- RIGHT COLUMN: RESULTS --- */
+        .right-col {
+            background: #f7fafc;
+            border-radius: 15px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid #e2e8f0;
+            max-height: 600px;
+            overflow-y: auto;
         }
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
 
-        #winnersContainer { display: grid; gap: 15px; }
-        
+        .results-header {
+            font-size: 1.2rem;
+            color: #718096;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 10px;
+        }
+
         .winner-card {
-            background: rgba(255, 255, 255, 0.98); padding: 20px 30px; border-radius: 12px;
-            display: flex; align-items: center; gap: 20px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            animation: slideIn 0.5s ease-out backwards;
-            transform-origin: left;
+            background: white;
+            padding: 15px 20px;
+            margin-bottom: 12px;
+            border-radius: 8px;
+            border-left: 5px solid #48bb78;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            animation: slideIn 0.5s ease;
         }
-        .winner-rank { font-size: 1.5em; font-weight: bold; color: #667eea; min-width: 140px; }
-        .winner-name { flex: 1; font-size: 1.5em; font-weight: bold; color: #2d3748; }
-        .winner-prize {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;
-            padding: 8px 16px; border-radius: 20px; font-weight: bold; font-size: 1.2em; white-space: nowrap;
+        .w-name { font-size: 1.2rem; font-weight: bold; color: #2d3748; }
+        .w-prize { 
+            font-size: 0.9rem; 
+            background: #ebf8ff; 
+            color: #2b6cb0; 
+            padding: 4px 10px; 
+            border-radius: 20px; 
+            font-weight: 600; 
         }
 
         @keyframes slideIn {
-            from { opacity: 0; transform: translateX(-50px) scale(0.9); }
-            to { opacity: 1; transform: translateX(0) scale(1); }
+            from { opacity: 0; transform: translateX(20px); }
+            to { opacity: 1; transform: translateX(0); }
         }
 
-        .status-bar {
-            text-align: center; padding: 10px; margin: 10px 0; border-radius: 6px; font-weight: bold; display: none;
+        /* --- STATS FOOTER --- */
+        .stats-bar {
+            margin-top: 20px;
+            text-align: center;
+            font-size: 0.9rem;
+            color: #a0aec0;
         }
-        .status-success { background: #c6f6d5; color: #22543d; }
-        .status-error { background: #fed7d7; color: #742a2a; }
 
-        @media (max-width: 1000px) {
-            .main-layout.before-spin, .main-layout.after-spin { grid-template-columns: 1fr; }
-            .wheel { width: 300px; height: 300px; }
-            .winner-card { flex-direction: column; text-align: center; gap: 10px; }
-            .winner-rank { min-width: auto; }
-        }
+        /* --- UTILS --- */
+        .hidden { display: none !important; }
+        .highlight-winner { border-left-color: #ed8936; background: #fffaf0; }
+        
     </style>
 </head>
 <body>
+
     <div class="container">
         <div class="header">
-            <h1>🏆 Welfare Summit 2025: WOC Quiz Raffle</h1>
-            <p>Upload participants list (.xlsx) and spin to win!</p>
+            <h1>🏆 Welfare Summit 2025</h1>
+            <p>Official Raffle System | Technip Energies</p>
         </div>
 
         <div class="controls">
-            <div class="file-upload-wrapper">
-                <input type="file" id="fileInput" accept=".xlsx,.xls" />
-                <label for="fileInput" class="btn btn-upload">📁 Upload Excel</label>
-            </div>
-            <button id="spinBtn" class="btn btn-spin" disabled>🎲 Spin Wheel</button>
-            <button id="downloadBtn" class="btn btn-download">📥 Save Winners</button>
-            <button id="resetBtn" class="btn btn-reset" disabled>🔄 Reset</button>
+            <label class="btn btn-upload">
+                📂 Load Excel
+                <input type="file" id="fileInput" accept=".xlsx,.xls">
+            </label>
+            
+            <button id="spinBtn" class="btn btn-spin" disabled>🎲 SPIN WHEEL</button>
+            <button id="nextRoundBtn" class="btn btn-next">Next Round ⏩</button>
+            <button id="downloadBtn" class="btn btn-download">📥 Save Results</button>
         </div>
 
-        <div id="statusBar" class="status-bar"></div>
-
-        <div id="mainLayout" class="main-layout before-spin">
-            <div class="left-section">
-                <div class="info-panels">
-                    <div id="statsPanel" style="display: none;">
-                        <div class="stat-box stat-participants">
-                            Total Participants: <strong id="countTotal">0</strong>
-                        </div>
-                        <div class="stat-box stat-winners" style="margin-top:10px;">
-                            Winners: <strong id="countWinners">0</strong> | Remaining: <strong id="countRemaining">0</strong>
-                        </div>
-                    </div>
-                    <div id="roundInfo" class="round-info" style="display: none;"></div>
+        <div class="game-area">
+            <div class="left-col">
+                <div class="round-card">
+                    <div id="roundTitle" class="round-title">Waiting for data...</div>
+                    <ul id="roundPrizes" class="prize-list"></ul>
                 </div>
 
-                <div class="wheel-container">
-                    <div id="wheel" class="wheel">
-                        <div style="display:flex;justify-content:center;align-items:center;height:100%;color:#aaa;">No Data</div>
-                    </div>
-                    <div class="wheel-center">
-                        <span style="font-size: 40px;">🏆</span>
-                    </div>
+                <div class="wheel-wrapper">
+                    <div id="wheel" class="wheel"></div>
+                    <div class="wheel-center">🏆</div>
                 </div>
             </div>
 
-            <div class="right-section">
-                <div id="readyMsg" class="ready-message" style="display: none;">Target Locked. Ready to Spin!</div>
-                
-                <div id="winnersDisplay" class="winners-display">
-                    <div id="winnersPlaceholder" style="text-align:center; color:#a0aec0; padding-top:80px; font-size:1.2em;">
-                        Waiting for results...
+            <div class="right-col">
+                <div class="results-header">Current Round Winners</div>
+                <div id="winnersContainer">
+                    <div style="text-align:center; color:#cbd5e0; padding-top: 50px;">
+                        Results will appear here...
                     </div>
-                    <div id="winnersContainer"></div>
                 </div>
             </div>
+        </div>
+
+        <div class="stats-bar">
+            Participants: <span id="statTotal">0</span> | 
+            Remaining: <span id="statRemaining">0</span> | 
+            Total Winners: <span id="statWinners">0</span>
         </div>
     </div>
 
     <script>
-        // --- CONFIGURATION ---
-        const WINNERS_PER_ROUND = 3;
-        const PRIZES = ['500 QAR', '250 QAR', '250 QAR'];
-        
-        // --- STATE ---
-        let participants = [];
-        let usedParticipants = []; 
-        let allWinnersHistory = []; // Для экспорта в Excel
+        // --- 1. CONFIGURATION: SCENARIO ---
+        // Жестко заданный сценарий по твоему запросу
+        const RAFFLE_SCENARIO = [
+            {
+                id: 1,
+                title: "Round 1: Melomaniacs",
+                prizes: [
+                    "Shokz Headphones Openmove Bone Conduction",
+                    "Shokz Headphones Openmove Bone Conduction",
+                    "JBL Tune 770NC Wireless Headphones With Mic",
+                    "JBL Flip 7 Waterproof Portable Bluetooth Speaker"
+                ]
+            },
+            {
+                id: 2,
+                title: "Round 2: Be the explorer!",
+                prizes: [
+                    "LePresso Portable Mug Burr Grinder 250ml",
+                    "Xiaomi Multi-Function Flashlight",
+                    "Leatherman Tool: Wave Plus Black Peg",
+                    "Eastpak Tecum L CNNCT Marine Backpack"
+                ]
+            },
+            {
+                id: 3,
+                title: "Round 3: It's a digital, digital life!",
+                prizes: [
+                    "LePresso Portable Mug Burr Grinder 250ml",
+                    "Xiaomi TV Box S 2Gen 4K UHD UK",
+                    "Samsung Tab Galaxy A9 Wifi 8.7in 4GB+64GB",
+                    "Samsung Tab Galaxy A9 Wifi 8.7in 4GB+64GB"
+                ]
+            },
+            {
+                id: 4,
+                title: "Round 4: Welcome to the iWorld!",
+                prizes: [
+                    "2024 Apple Watch SE 2 Sport Band 40 mm",
+                    "AirPods Pro 3",
+                    "11-inch iPad Air M2"
+                ]
+            },
+            {
+                id: 5,
+                title: "FINAL ROUND: GRAND PRIX!",
+                prizes: [
+                    "iPhone 17 Pro Max 256 GB"
+                ]
+            }
+        ];
+
+        // --- 2. GLOBAL STATE ---
+        let participants = [];      // Все загруженные имена
+        let usedParticipants = [];  // Кто уже выиграл
+        let allWinners = [];        // История всех побед
+        let currentRoundIndex = 0;  // Индекс текущего раунда (0-4)
         let isSpinning = false;
 
-        // --- DOM ELEMENTS ---
+        // --- 3. ELEMENTS ---
         const el = {
             file: document.getElementById('fileInput'),
-            spin: document.getElementById('spinBtn'),
-            reset: document.getElementById('resetBtn'),
-            download: document.getElementById('downloadBtn'),
+            spinBtn: document.getElementById('spinBtn'),
+            nextBtn: document.getElementById('nextRoundBtn'),
+            dlBtn: document.getElementById('downloadBtn'),
             wheel: document.getElementById('wheel'),
-            layout: document.getElementById('mainLayout'),
-            status: document.getElementById('statusBar'),
-            statsPanel: document.getElementById('statsPanel'),
-            cTotal: document.getElementById('countTotal'),
-            cWinners: document.getElementById('countWinners'),
-            cRemain: document.getElementById('countRemaining'),
-            roundInfo: document.getElementById('roundInfo'),
-            readyMsg: document.getElementById('readyMsg'),
-            wDisplay: document.getElementById('winnersDisplay'),
+            roundTitle: document.getElementById('roundTitle'),
+            roundPrizes: document.getElementById('roundPrizes'),
             wContainer: document.getElementById('winnersContainer'),
-            wPlaceholder: document.getElementById('winnersPlaceholder')
+            sTotal: document.getElementById('statTotal'),
+            sRemain: document.getElementById('statRemaining'),
+            sWinners: document.getElementById('statWinners')
         };
 
-        // --- INITIALIZATION ---
-        el.file.addEventListener('change', handleFileUpload);
-        el.spin.addEventListener('click', runSpin);
-        el.reset.addEventListener('click', fullReset);
-        el.download.addEventListener('click', downloadWinnersExcel);
+        // --- 4. EVENTS ---
+        el.file.addEventListener('change', handleFile);
+        el.spinBtn.addEventListener('click', runSpin);
+        el.nextBtn.addEventListener('click', setupNextRound);
+        el.dlBtn.addEventListener('click', downloadExcel);
 
-        function showStatus(msg, type='success') {
-            el.status.textContent = msg;
-            el.status.className = `status-bar status-${type}`;
-            el.status.style.display = 'block';
-            setTimeout(() => { el.status.style.display = 'none'; }, 5000);
-        }
-
-        // --- LOGIC: FILE UPLOAD ---
-        function handleFileUpload(e) {
+        // --- 5. LOGIC: LOAD EXCEL ---
+        function handleFile(e) {
             const file = e.target.files[0];
             if (!file) return;
 
             const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    const data = new Uint8Array(e.target.result);
-                    const workbook = XLSX.read(data, {type: 'array'});
-                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-                    const jsonData = XLSX.utils.sheet_to_json(firstSheet, {header: 1});
+            reader.onload = (e) => {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, {type: 'array'});
+                const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                const jsonData = XLSX.utils.sheet_to_json(sheet, {header: 1});
 
-                    // Flatten and clean data
-                    participants = [];
-                    jsonData.forEach(row => {
-                        const text = row.filter(c => c).join(' | ').trim();
-                        if (text) participants.push(text);
-                    });
-
-                    if (participants.length === 0) throw new Error("No valid names found");
-
-                    // Reset State
-                    usedParticipants = [];
-                    allWinnersHistory = [];
-                    
-                    // UI Updates
-                    el.cTotal.textContent = participants.length;
-                    el.statsPanel.style.display = 'block';
-                    updateStats();
-                    renderWheelSegments();
-                    initRoundInfo();
-                    
-                    el.spin.disabled = false;
-                    el.reset.disabled = true;
-                    el.download.style.display = 'none';
-                    el.layout.classList.remove('after-spin');
-                    el.layout.classList.add('before-spin');
-                    el.readyMsg.style.display = 'block';
-                    el.wContainer.innerHTML = '';
-                    el.wPlaceholder.style.display = 'block';
-                    
-                    showStatus(`Loaded ${participants.length} participants! Ready.`);
-
-                } catch (err) {
-                    console.error(err);
-                    showStatus("Error reading file. Check format.", "error");
+                // Flatten and Clean
+                participants = jsonData.flat().filter(p => p && typeof p === 'string' && p.trim() !== "");
+                
+                if (participants.length > 0) {
+                    resetGame();
+                    renderWheel();
+                    updateUI();
+                    alert(`Loaded ${participants.length} participants!`);
+                } else {
+                    alert("No valid names found in Excel.");
                 }
             };
             reader.readAsArrayBuffer(file);
         }
 
-        // --- LOGIC: WHEEL RENDER ---
-        function renderWheelSegments() {
-            el.wheel.innerHTML = '';
-            const count = participants.length;
-            const colors = ['#ff6b6b', '#4ecdc4', '#ffeaa7', '#a29bfe', '#fab1a0', '#74b9ff', '#81ecec', '#fd79a8'];
-            
-            // Limit rendered segments visually if too many participants (performance & aesthetics)
-            const renderCount = Math.min(count, 30); 
-            const segmentAngle = 360 / renderCount;
+        // --- 6. GAME CONTROL ---
+        function resetGame() {
+            usedParticipants = [];
+            allWinners = [];
+            currentRoundIndex = 0;
+            updateRoundInfo();
+            el.spinBtn.disabled = false;
+            el.wContainer.innerHTML = '<div style="text-align:center; color:#cbd5e0; padding-top: 50px;">Ready to Start!</div>';
+        }
 
-            for(let i=0; i<renderCount; i++) {
+        function updateRoundInfo() {
+            if (currentRoundIndex >= RAFFLE_SCENARIO.length) {
+                el.roundTitle.textContent = "🏆 RAFFLE COMPLETED 🏆";
+                el.roundPrizes.innerHTML = "";
+                el.spinBtn.disabled = true;
+                el.spinBtn.textContent = "Done";
+                return;
+            }
+
+            const round = RAFFLE_SCENARIO[currentRoundIndex];
+            el.roundTitle.textContent = round.title;
+            
+            // Show list of prizes for this round
+            el.roundPrizes.innerHTML = round.prizes
+                .map(p => `<li>${p}</li>`)
+                .join('');
+            
+            el.spinBtn.textContent = `SPIN ROUND ${round.id}`;
+        }
+
+        function renderWheel() {
+            el.wheel.innerHTML = '';
+            const count = Math.min(participants.length, 40); // Visual limit
+            const colors = ['#63b3ed', '#fc8181', '#f6e05e', '#68d391', '#a3bffa', '#f687b3'];
+            const segmentAngle = 360 / count;
+
+            for(let i=0; i<count; i++) {
                 const segment = document.createElement('div');
                 segment.className = 'wheel-segment';
-                const rotate = i * segmentAngle;
-                const skew = 90 - segmentAngle; 
-                // Using simple rotation for background color slices
-                // Note: For perfect CSS pie charts, conic-gradient is often easier, 
-                // but we will stick to your clip-path method simplified or conic-gradient for stability
                 segment.style.background = `conic-gradient(${colors[i % colors.length]} ${segmentAngle}deg, transparent 0)`;
-                segment.style.transform = `rotate(${rotate}deg)`;
-                segment.style.width = "100%";
-                segment.style.height = "100%";
-                segment.style.clipPath = "none"; // Resetting clip path for conic approach
-                segment.style.borderRadius = "50%";
+                segment.style.transform = `rotate(${i * segmentAngle}deg)`;
                 el.wheel.appendChild(segment);
             }
         }
 
-        function initRoundInfo() {
-            el.roundInfo.innerHTML = `
-                <h3>Raffle Prizes</h3>
-                ${PRIZES.map(p => `<p>• ${p}</p>`).join('')}
-                <div class="total-left">Picking ${WINNERS_PER_ROUND} winners per spin</div>
-            `;
-            el.roundInfo.style.display = 'block';
-        }
-
-        // --- LOGIC: SPIN & WIN ---
+        // --- 7. SPIN LOGIC ---
         function runSpin() {
             if (isSpinning) return;
-            const available = participants.filter(p => !usedParticipants.includes(p));
+
+            const round = RAFFLE_SCENARIO[currentRoundIndex];
+            const prizesCount = round.prizes.length;
             
-            if (available.length < WINNERS_PER_ROUND) {
-                showStatus(`Not enough participants! Need ${WINNERS_PER_ROUND}, have ${available.length}.`, 'error');
+            // Filter available
+            const available = participants.filter(p => !usedParticipants.includes(p));
+
+            if (available.length < prizesCount) {
+                alert(`Not enough participants! Need ${prizesCount}, have ${available.length}.`);
                 return;
             }
 
             isSpinning = true;
-            el.spin.disabled = true;
-            el.layout.classList.add('spinning-mode'); // Optional hook
-            el.wheel.classList.add('spinning');
+            el.spinBtn.disabled = true;
+            el.wheel.style.transition = "transform 4s cubic-bezier(0.17, 0.67, 0.12, 0.99)";
 
-            // 1. Determine Winners (Logic)
-            // Fisher-Yates shuffle for available pool
+            // 1. Pick Winners (Logic)
+            // Shuffle available array
             for (let i = available.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
                 [available[i], available[j]] = [available[j], available[i]];
             }
-            const currentWinners = available.slice(0, WINNERS_PER_ROUND);
+            const winnersNames = available.slice(0, prizesCount);
 
-            // 2. Visual Spin
-            const baseRot = 1800; // 5 spins
-            const randRot = Math.floor(Math.random() * 360);
-            const totalRot = baseRot + randRot;
-            
-            // Get current rotation to add to it (continuous spinning)
+            // 2. Rotate Wheel (Visual)
+            const baseRot = 1800 + Math.random() * 360;
             const currentTransform = el.wheel.style.transform;
             const currentDeg = currentTransform ? parseInt(currentTransform.replace(/[^\d-]/g, '')) : 0;
-            const finalDeg = currentDeg + totalRot;
+            el.wheel.style.transform = `rotate(${currentDeg + baseRot}deg)`;
 
-            el.wheel.style.transform = `rotate(${finalDeg}deg)`;
-
-            // 3. Reveal
+            // 3. Finish Spin
             setTimeout(() => {
                 isSpinning = false;
-                el.wheel.classList.remove('spinning');
+                processWinners(winnersNames, round.prizes);
                 
-                // Process Winners
-                const roundWinnersData = [];
-                currentWinners.forEach((name, idx) => {
-                    usedParticipants.push(name);
-                    const prize = PRIZES[idx];
-                    const rank = allWinnersHistory.length + 1;
-                    
-                    const winObj = { rank, name, prize };
-                    roundWinnersData.push(winObj);
-                    allWinnersHistory.push(winObj);
-                });
-
-                updateStats();
-                showWinnersUI(roundWinnersData);
-                triggerConfetti();
-                
-                el.reset.disabled = false;
-                el.download.style.display = 'inline-flex';
-                
-                if ((participants.length - usedParticipants.length) >= WINNERS_PER_ROUND) {
-                    el.spin.disabled = false;
+                // Show "Next Round" button instead of unlocking Spin immediately
+                if (currentRoundIndex < RAFFLE_SCENARIO.length - 1) {
+                    el.nextBtn.style.display = 'inline-flex';
+                    el.spinBtn.style.display = 'none';
                 } else {
-                    showStatus("Raffle Complete! No more participants.", "success");
+                    el.spinBtn.textContent = "Game Over";
+                    el.dlBtn.style.display = 'inline-flex';
+                    fireGrandConfetti();
                 }
 
+                fireConfetti();
+                updateUI();
             }, 4000);
         }
 
-        function showWinnersUI(winners) {
-            // Layout Transition
-            el.layout.classList.remove('before-spin');
-            el.layout.classList.add('after-spin');
-            el.readyMsg.style.display = 'none';
-            el.wPlaceholder.style.display = 'none';
+        function processWinners(names, prizes) {
+            el.wContainer.innerHTML = ''; // Clear previous round display
+            
+            names.forEach((name, i) => {
+                const prize = prizes[i]; // Match prize to winner index
+                usedParticipants.push(name);
+                
+                // Save to history
+                allWinners.push({
+                    Round: RAFFLE_SCENARIO[currentRoundIndex].title,
+                    Name: name,
+                    Prize: prize
+                });
 
-            // Clear previous round winners from display or append? 
-            // Usually for "Round" display we clear.
-            el.wContainer.innerHTML = ''; 
-
-            winners.forEach((w, i) => {
+                // Display Card
                 const card = document.createElement('div');
                 card.className = 'winner-card';
                 card.style.animationDelay = `${i * 0.2}s`;
                 card.innerHTML = `
-                    <div class="winner-rank">#${w.rank}</div>
-                    <div class="winner-name">${w.name}</div>
-                    <div class="winner-prize">${w.prize}</div>
+                    <div class="w-name">${name}</div>
+                    <div class="w-prize">${prize}</div>
                 `;
                 el.wContainer.appendChild(card);
             });
         }
 
-        function updateStats() {
-            el.cWinners.textContent = usedParticipants.length;
-            el.cRemain.textContent = participants.length - usedParticipants.length;
-        }
-
-        function triggerConfetti() {
-            var duration = 3 * 1000;
-            var animationEnd = Date.now() + duration;
-            var defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
-
-            var random = function(min, max) { return Math.random() * (max - min) + min; }
-
-            var interval = setInterval(function() {
-                var timeLeft = animationEnd - Date.now();
-                if (timeLeft <= 0) return clearInterval(interval);
-                var particleCount = 50 * (timeLeft / duration);
-                confetti(Object.assign({}, defaults, { particleCount, origin: { x: random(0.1, 0.3), y: Math.random() - 0.2 } }));
-                confetti(Object.assign({}, defaults, { particleCount, origin: { x: random(0.7, 0.9), y: Math.random() - 0.2 } }));
-            }, 250);
-        }
-
-        // --- LOGIC: DOWNLOAD & RESET ---
-        function downloadWinnersExcel() {
-            if (allWinnersHistory.length === 0) return;
+        function setupNextRound() {
+            currentRoundIndex++;
+            updateRoundInfo();
             
-            const ws = XLSX.utils.json_to_sheet(allWinnersHistory);
+            // Reset UI for next spin
+            el.wContainer.innerHTML = '<div style="text-align:center; color:#cbd5e0; padding-top: 50px;">Waiting for spin...</div>';
+            el.nextBtn.style.display = 'none';
+            el.spinBtn.style.display = 'inline-flex';
+            el.spinBtn.disabled = false;
+            
+            // Reset wheel rotation slightly for visual feedback
+            el.wheel.style.transition = 'none';
+            el.wheel.style.transform = `rotate(0deg)`;
+        }
+
+        function updateUI() {
+            el.sTotal.textContent = participants.length;
+            el.sWinners.textContent = usedParticipants.length;
+            el.sRemain.textContent = participants.length - usedParticipants.length;
+        }
+
+        // --- 8. EXTRAS ---
+        function fireConfetti() {
+            confetti({
+                particleCount: 150,
+                spread: 70,
+                origin: { y: 0.6 }
+            });
+        }
+
+        function fireGrandConfetti() {
+            const end = Date.now() + 5 * 1000;
+            const colors = ['#bb0000', '#ffffff'];
+            (function frame() {
+                confetti({
+                    particleCount: 2,
+                    angle: 60,
+                    spread: 55,
+                    origin: { x: 0 },
+                    colors: colors
+                });
+                confetti({
+                    particleCount: 2,
+                    angle: 120,
+                    spread: 55,
+                    origin: { x: 1 },
+                    colors: colors
+                });
+                if (Date.now() < end) requestAnimationFrame(frame);
+            }());
+        }
+
+        function downloadExcel() {
+            const ws = XLSX.utils.json_to_sheet(allWinners);
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, "Winners");
-            XLSX.writeFile(wb, "Raffle_Winners.xlsx");
-        }
-
-        function fullReset() {
-            if (!confirm("Reset everything? History of winners will be lost.")) return;
-            usedParticipants = [];
-            allWinnersHistory = [];
-            updateStats();
-            
-            el.layout.classList.remove('after-spin');
-            el.layout.classList.add('before-spin');
-            el.readyMsg.style.display = 'block';
-            el.wPlaceholder.style.display = 'block';
-            el.wContainer.innerHTML = '';
-            el.download.style.display = 'none';
-            el.spin.disabled = false;
-            el.reset.disabled = true;
-            
-            // Reset wheel rotation
-            el.wheel.style.transition = 'none';
-            el.wheel.style.transform = 'rotate(0deg)';
+            XLSX.writeFile(wb, "Raffle_Results_2025.xlsx");
         }
     </script>
 </body>
