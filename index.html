@@ -1,4 +1,210 @@
-<script>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Village Heroes Raffle</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+        .container {
+            max-width: 1800px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        /* --- Layout Logic --- */
+        .main-layout {
+            display: grid;
+            gap: 30px;
+            margin-top: 30px;
+            transition: all 0.5s ease;
+        }
+        .main-layout.before-spin { grid-template-columns: 400px 1fr; }
+        .main-layout.after-spin { grid-template-columns: 450px 1fr; }
+        
+        .left-section { display: flex; flex-direction: column; gap: 20px; }
+        .right-section { display: flex; flex-direction: column; transition: all 0.5s ease; }
+        .main-layout.before-spin .right-section { align-items: center; justify-content: start; }
+        .main-layout.after-spin .right-section { align-items: stretch; }
+
+        /* --- Header & Controls --- */
+        .header { text-align: center; margin-bottom: 20px; }
+        .header h1 { color: #2d3748; font-size: 2.5em; margin-bottom: 10px; text-shadow: 1px 1px 2px rgba(0,0,0,0.1); }
+        .controls { display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; justify-content: center; }
+        
+        .btn {
+            padding: 12px 24px; border: none; border-radius: 8px; font-size: 16px; font-weight: bold;
+            cursor: pointer; transition: all 0.2s; text-transform: uppercase; letter-spacing: 0.5px;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none !important; }
+        .btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+
+        .btn-upload { background: #4299e1; color: white; }
+        .btn-upload:hover { background: #3182ce; }
+        
+        .btn-spin { background: linear-gradient(45deg, #ff6b6b, #feca57); color: white; }
+        .btn-reset { background: linear-gradient(45deg, #e74c3c, #c0392b); color: white; }
+        .btn-download { background: #48bb78; color: white; display: none; } /* Скрыта по умолчанию */
+        .btn-download:hover { background: #38a169; }
+
+        .file-upload-wrapper input[type="file"] { display: none; }
+
+        /* --- Info Panels --- */
+        .info-panels { display: grid; gap: 15px; }
+        .stat-box { padding: 12px; border-radius: 8px; text-align: center; font-size: 0.9em; }
+        .stat-participants { background: #ebf8ff; border-left: 4px solid #4299e1; }
+        .stat-winners { background: #fff5f5; border-left: 4px solid #e53e3e; }
+        
+        .round-info { background: #f0f4ff; border-left: 5px solid #667eea; padding: 15px; border-radius: 8px; }
+        .round-info h3 { color: #4a5568; margin-bottom: 10px; }
+        .round-info p { margin-left: 10px; padding: 2px 0; }
+        .total-left { border-top: 1px solid #cbd5e0; margin-top: 10px; padding-top: 10px; font-weight: bold; color: #5a67d8; }
+
+        /* --- Wheel --- */
+        .wheel-container {
+            width: 100%; height: 400px; display: flex; justify-content: center; align-items: center; position: relative;
+        }
+        .wheel {
+            width: 380px; height: 380px; border-radius: 50%; border: 8px solid #2d3748;
+            position: relative; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            transition: transform 4s cubic-bezier(0.17, 0.67, 0.12, 0.99);
+        }
+        .wheel.spinning { filter: blur(1px); }
+        .wheel-segment {
+            position: absolute; width: 100%; height: 100%;
+            clip-path: polygon(50% 50%, 50% 0%, 100% 0%);
+            transform-origin: center;
+        }
+        .wheel-center {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 100px; height: 100px; background: white; border-radius: 50%;
+            z-index: 10; box-shadow: 0 0 15px rgba(0,0,0,0.2);
+            display: flex; align-items: center; justify-content: center;
+        }
+        .wheel-center img { width: 80px; height: 80px; object-fit: contain; }
+
+        /* --- Winners Area --- */
+        .winners-display {
+            width: 100%; padding: 20px; background: #f7fafc; border-radius: 15px;
+            min-height: 200px; transition: all 0.3s;
+        }
+        .main-layout.after-spin .winners-display {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            max-height: 700px; overflow-y: auto;
+        }
+
+        .ready-message {
+            font-size: 2em; color: #667eea; text-align: center; font-weight: bold;
+            animation: pulse 2s infinite; margin-bottom: 20px;
+        }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
+
+        #winnersContainer { display: grid; gap: 15px; }
+        
+        .winner-card {
+            background: rgba(255, 255, 255, 0.98); padding: 20px 30px; border-radius: 12px;
+            display: flex; align-items: center; gap: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            animation: slideIn 0.5s ease-out backwards;
+            transform-origin: left;
+        }
+        .winner-rank { font-size: 1.5em; font-weight: bold; color: #667eea; min-width: 140px; }
+        .winner-name { flex: 1; font-size: 1.5em; font-weight: bold; color: #2d3748; }
+        .winner-prize {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;
+            padding: 8px 16px; border-radius: 20px; font-weight: bold; font-size: 1.2em; white-space: nowrap;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-50px) scale(0.9); }
+            to { opacity: 1; transform: translateX(0) scale(1); }
+        }
+
+        .status-bar {
+            text-align: center; padding: 10px; margin: 10px 0; border-radius: 6px; font-weight: bold; display: none;
+        }
+        .status-success { background: #c6f6d5; color: #22543d; }
+        .status-error { background: #fed7d7; color: #742a2a; }
+
+        @media (max-width: 1000px) {
+            .main-layout.before-spin, .main-layout.after-spin { grid-template-columns: 1fr; }
+            .wheel { width: 300px; height: 300px; }
+            .winner-card { flex-direction: column; text-align: center; gap: 10px; }
+            .winner-rank { min-width: auto; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏆 Welfare Summit 2025: WOC Quiz Raffle</h1>
+            <p>Upload participants list (.xlsx) and spin to win!</p>
+        </div>
+
+        <div class="controls">
+            <div class="file-upload-wrapper">
+                <input type="file" id="fileInput" accept=".xlsx,.xls" />
+                <label for="fileInput" class="btn btn-upload">📁 Upload Excel</label>
+            </div>
+            <button id="spinBtn" class="btn btn-spin" disabled>🎲 Spin Wheel</button>
+            <button id="downloadBtn" class="btn btn-download">📥 Save Winners</button>
+            <button id="resetBtn" class="btn btn-reset" disabled>🔄 Reset</button>
+        </div>
+
+        <div id="statusBar" class="status-bar"></div>
+
+        <div id="mainLayout" class="main-layout before-spin">
+            <div class="left-section">
+                <div class="info-panels">
+                    <div id="statsPanel" style="display: none;">
+                        <div class="stat-box stat-participants">
+                            Total Participants: <strong id="countTotal">0</strong>
+                        </div>
+                        <div class="stat-box stat-winners" style="margin-top:10px;">
+                            Winners: <strong id="countWinners">0</strong> | Remaining: <strong id="countRemaining">0</strong>
+                        </div>
+                    </div>
+                    <div id="roundInfo" class="round-info" style="display: none;"></div>
+                </div>
+
+                <div class="wheel-container">
+                    <div id="wheel" class="wheel">
+                        <div style="display:flex;justify-content:center;align-items:center;height:100%;color:#aaa;">No Data</div>
+                    </div>
+                    <div class="wheel-center">
+                        <span style="font-size: 40px;">🏆</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="right-section">
+                <div id="readyMsg" class="ready-message" style="display: none;">Target Locked. Ready to Spin!</div>
+                
+                <div id="winnersDisplay" class="winners-display">
+                    <div id="winnersPlaceholder" style="text-align:center; color:#a0aec0; padding-top:80px; font-size:1.2em;">
+                        Waiting for results...
+                    </div>
+                    <div id="winnersContainer"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
         // --- CONFIGURATION ---
         const WINNERS_PER_ROUND = 3;
         const PRIZES = ['500 QAR', '250 QAR', '250 QAR'];
@@ -6,7 +212,7 @@
         // --- STATE ---
         let participants = [];
         let usedParticipants = []; 
-        let allWinnersHistory = []; 
+        let allWinnersHistory = []; // Для экспорта в Excel
         let isSpinning = false;
 
         // --- DOM ELEMENTS ---
@@ -30,87 +236,16 @@
         };
 
         // --- INITIALIZATION ---
-        // ★ NEW: При запуске проверяем, есть ли сохраненные данные
-        window.addEventListener('DOMContentLoaded', loadStateFromStorage);
-
         el.file.addEventListener('change', handleFileUpload);
         el.spin.addEventListener('click', runSpin);
         el.reset.addEventListener('click', fullReset);
         el.download.addEventListener('click', downloadWinnersExcel);
-
-        // ★ NEW: Предупреждение при попытке закрыть вкладку, если есть победители
-        window.onbeforeunload = function() {
-            if (allWinnersHistory.length > 0) {
-                return "You have unsaved winners. Are you sure?";
-            }
-        };
 
         function showStatus(msg, type='success') {
             el.status.textContent = msg;
             el.status.className = `status-bar status-${type}`;
             el.status.style.display = 'block';
             setTimeout(() => { el.status.style.display = 'none'; }, 5000);
-        }
-
-        // --- LOGIC: STORAGE (Новые функции сохранения) ---
-        function saveStateToStorage() {
-            const state = {
-                participants,
-                usedParticipants,
-                allWinnersHistory
-            };
-            localStorage.setItem('raffleState', JSON.stringify(state));
-        }
-
-        function loadStateFromStorage() {
-            const saved = localStorage.getItem('raffleState');
-            if (saved) {
-                const state = JSON.parse(saved);
-                if (state.participants && state.participants.length > 0) {
-                    // Восстанавливаем данные
-                    participants = state.participants;
-                    usedParticipants = state.usedParticipants || [];
-                    allWinnersHistory = state.allWinnersHistory || [];
-                    
-                    // Восстанавливаем UI
-                    restoreUI();
-                    showStatus("♻️ Session restored from backup!", "success");
-                }
-            }
-        }
-
-        function restoreUI() {
-            // Обновляем статистику
-            el.cTotal.textContent = participants.length;
-            el.statsPanel.style.display = 'block';
-            updateStats();
-            renderWheelSegments();
-            initRoundInfo();
-
-            // Включаем кнопки
-            el.spin.disabled = false;
-            el.reset.disabled = false;
-            
-            // Если уже были победители, показываем экран результатов
-            if (allWinnersHistory.length > 0) {
-                el.download.style.display = 'inline-flex';
-                el.layout.classList.remove('before-spin');
-                el.layout.classList.add('after-spin');
-                el.readyMsg.style.display = 'none';
-                el.wPlaceholder.style.display = 'none';
-                
-                // Перерисовываем карточки
-                el.wContainer.innerHTML = '';
-                // Показываем последних победителей (или всех)
-                // Для простоты покажем весь список в обратном порядке (новые сверху)
-                const reversedHistory = [...allWinnersHistory].reverse();
-                reversedHistory.forEach((w) => {
-                    createWinnerCard(w, false); // false = без анимации появления
-                });
-            } else {
-                el.layout.classList.add('before-spin');
-                el.readyMsg.style.display = 'block';
-            }
         }
 
         // --- LOGIC: FILE UPLOAD ---
@@ -126,6 +261,7 @@
                     const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
                     const jsonData = XLSX.utils.sheet_to_json(firstSheet, {header: 1});
 
+                    // Flatten and clean data
                     participants = [];
                     jsonData.forEach(row => {
                         const text = row.filter(c => c).join(' | ').trim();
@@ -134,10 +270,9 @@
 
                     if (participants.length === 0) throw new Error("No valid names found");
 
-                    // Сброс при загрузке нового файла
+                    // Reset State
                     usedParticipants = [];
                     allWinnersHistory = [];
-                    saveStateToStorage(); // Сохраняем чистое состояние
                     
                     // UI Updates
                     el.cTotal.textContent = participants.length;
@@ -170,6 +305,8 @@
             el.wheel.innerHTML = '';
             const count = participants.length;
             const colors = ['#ff6b6b', '#4ecdc4', '#ffeaa7', '#a29bfe', '#fab1a0', '#74b9ff', '#81ecec', '#fd79a8'];
+            
+            // Limit rendered segments visually if too many participants (performance & aesthetics)
             const renderCount = Math.min(count, 30); 
             const segmentAngle = 360 / renderCount;
 
@@ -177,10 +314,15 @@
                 const segment = document.createElement('div');
                 segment.className = 'wheel-segment';
                 const rotate = i * segmentAngle;
+                const skew = 90 - segmentAngle; 
+                // Using simple rotation for background color slices
+                // Note: For perfect CSS pie charts, conic-gradient is often easier, 
+                // but we will stick to your clip-path method simplified or conic-gradient for stability
                 segment.style.background = `conic-gradient(${colors[i % colors.length]} ${segmentAngle}deg, transparent 0)`;
                 segment.style.transform = `rotate(${rotate}deg)`;
                 segment.style.width = "100%";
                 segment.style.height = "100%";
+                segment.style.clipPath = "none"; // Resetting clip path for conic approach
                 segment.style.borderRadius = "50%";
                 el.wheel.appendChild(segment);
             }
@@ -201,47 +343,41 @@
             const available = participants.filter(p => !usedParticipants.includes(p));
             
             if (available.length < WINNERS_PER_ROUND) {
-                showStatus(`Not enough participants! Need ${WINNERS_PER_ROUND}.`, 'error');
+                showStatus(`Not enough participants! Need ${WINNERS_PER_ROUND}, have ${available.length}.`, 'error');
                 return;
             }
 
             isSpinning = true;
             el.spin.disabled = true;
-            el.layout.classList.add('spinning-mode'); 
+            el.layout.classList.add('spinning-mode'); // Optional hook
             el.wheel.classList.add('spinning');
 
-            // Logic: Fisher-Yates
+            // 1. Determine Winners (Logic)
+            // Fisher-Yates shuffle for available pool
             for (let i = available.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
                 [available[i], available[j]] = [available[j], available[i]];
             }
             const currentWinners = available.slice(0, WINNERS_PER_ROUND);
 
-            // Visual Spin
-            const baseRot = 1800; 
+            // 2. Visual Spin
+            const baseRot = 1800; // 5 spins
             const randRot = Math.floor(Math.random() * 360);
             const totalRot = baseRot + randRot;
+            
+            // Get current rotation to add to it (continuous spinning)
             const currentTransform = el.wheel.style.transform;
             const currentDeg = currentTransform ? parseInt(currentTransform.replace(/[^\d-]/g, '')) : 0;
             const finalDeg = currentDeg + totalRot;
 
             el.wheel.style.transform = `rotate(${finalDeg}deg)`;
 
-            // Reveal
+            // 3. Reveal
             setTimeout(() => {
                 isSpinning = false;
                 el.wheel.classList.remove('spinning');
                 
-                // Переключаем лейаут СРАЗУ перед показом карточек
-                el.layout.classList.remove('before-spin');
-                el.layout.classList.add('after-spin');
-                el.readyMsg.style.display = 'none';
-                el.wPlaceholder.style.display = 'none';
-
-                // Очищаем контейнер, чтобы показать только ЭТОТ раунд?
-                // Или добавляем сверху? 
-                // Давай добавлять СВЕРХУ (prepend), чтобы новые были первыми
-                
+                // Process Winners
                 const roundWinnersData = [];
                 currentWinners.forEach((name, idx) => {
                     usedParticipants.push(name);
@@ -251,12 +387,10 @@
                     const winObj = { rank, name, prize };
                     roundWinnersData.push(winObj);
                     allWinnersHistory.push(winObj);
-                    
-                    createWinnerCard(winObj, true); // true = с анимацией
                 });
 
                 updateStats();
-                saveStateToStorage(); // ★ Сохраняем прогресс
+                showWinnersUI(roundWinnersData);
                 triggerConfetti();
                 
                 el.reset.disabled = false;
@@ -271,20 +405,28 @@
             }, 4000);
         }
 
-        // Helper для создания карточки
-        function createWinnerCard(w, animate) {
-            const card = document.createElement('div');
-            card.className = 'winner-card';
-            if (animate) {
-                card.style.animation = 'slideIn 0.5s ease-out backwards';
-            }
-            card.innerHTML = `
-                <div class="winner-rank">#${w.rank}</div>
-                <div class="winner-name">${w.name}</div>
-                <div class="winner-prize">${w.prize}</div>
-            `;
-            // Добавляем в начало списка (новые сверху)
-            el.wContainer.insertBefore(card, el.wContainer.firstChild);
+        function showWinnersUI(winners) {
+            // Layout Transition
+            el.layout.classList.remove('before-spin');
+            el.layout.classList.add('after-spin');
+            el.readyMsg.style.display = 'none';
+            el.wPlaceholder.style.display = 'none';
+
+            // Clear previous round winners from display or append? 
+            // Usually for "Round" display we clear.
+            el.wContainer.innerHTML = ''; 
+
+            winners.forEach((w, i) => {
+                const card = document.createElement('div');
+                card.className = 'winner-card';
+                card.style.animationDelay = `${i * 0.2}s`;
+                card.innerHTML = `
+                    <div class="winner-rank">#${w.rank}</div>
+                    <div class="winner-name">${w.name}</div>
+                    <div class="winner-prize">${w.prize}</div>
+                `;
+                el.wContainer.appendChild(card);
+            });
         }
 
         function updateStats() {
@@ -296,7 +438,9 @@
             var duration = 3 * 1000;
             var animationEnd = Date.now() + duration;
             var defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
+
             var random = function(min, max) { return Math.random() * (max - min) + min; }
+
             var interval = setInterval(function() {
                 var timeLeft = animationEnd - Date.now();
                 if (timeLeft <= 0) return clearInterval(interval);
@@ -309,6 +453,7 @@
         // --- LOGIC: DOWNLOAD & RESET ---
         function downloadWinnersExcel() {
             if (allWinnersHistory.length === 0) return;
+            
             const ws = XLSX.utils.json_to_sheet(allWinnersHistory);
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, "Winners");
@@ -316,19 +461,9 @@
         }
 
         function fullReset() {
-            // ★ Safety check: авто-скачивание перед удалением
-            if (allWinnersHistory.length > 0) {
-                if(confirm("Download winners list before resetting?")) {
-                    downloadWinnersExcel();
-                }
-            }
-
-            if (!confirm("⚠️ Are you sure you want to RESET ALL DATA? This cannot be undone.")) return;
-            
+            if (!confirm("Reset everything? History of winners will be lost.")) return;
             usedParticipants = [];
             allWinnersHistory = [];
-            localStorage.removeItem('raffleState'); // ★ Очищаем хранилище
-            
             updateStats();
             
             el.layout.classList.remove('after-spin');
@@ -339,9 +474,11 @@
             el.download.style.display = 'none';
             el.spin.disabled = false;
             el.reset.disabled = true;
+            
+            // Reset wheel rotation
             el.wheel.style.transition = 'none';
             el.wheel.style.transform = 'rotate(0deg)';
-            
-            showStatus("System Reset. Ready for new raffle.", "success");
         }
     </script>
+</body>
+</html>
