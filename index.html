@@ -204,7 +204,7 @@
         </div>
     </div>
 
-  <script>
+    <script>
         // --- CONFIGURATION ---
         const WINNERS_PER_ROUND = 3;
         const PRIZES = ['500 QAR', '250 QAR', '250 QAR'];
@@ -212,7 +212,7 @@
         // --- STATE ---
         let participants = [];
         let usedParticipants = []; 
-        let allWinnersHistory = []; 
+        let allWinnersHistory = []; // Для экспорта в Excel
         let isSpinning = false;
 
         // --- DOM ELEMENTS ---
@@ -236,87 +236,16 @@
         };
 
         // --- INITIALIZATION ---
-        // ★ NEW: При запуске проверяем, есть ли сохраненные данные
-        window.addEventListener('DOMContentLoaded', loadStateFromStorage);
-
         el.file.addEventListener('change', handleFileUpload);
         el.spin.addEventListener('click', runSpin);
         el.reset.addEventListener('click', fullReset);
         el.download.addEventListener('click', downloadWinnersExcel);
-
-        // ★ NEW: Предупреждение при попытке закрыть вкладку, если есть победители
-        window.onbeforeunload = function() {
-            if (allWinnersHistory.length > 0) {
-                return "You have unsaved winners. Are you sure?";
-            }
-        };
 
         function showStatus(msg, type='success') {
             el.status.textContent = msg;
             el.status.className = `status-bar status-${type}`;
             el.status.style.display = 'block';
             setTimeout(() => { el.status.style.display = 'none'; }, 5000);
-        }
-
-        // --- LOGIC: STORAGE (Новые функции сохранения) ---
-        function saveStateToStorage() {
-            const state = {
-                participants,
-                usedParticipants,
-                allWinnersHistory
-            };
-            localStorage.setItem('raffleState', JSON.stringify(state));
-        }
-
-        function loadStateFromStorage() {
-            const saved = localStorage.getItem('raffleState');
-            if (saved) {
-                const state = JSON.parse(saved);
-                if (state.participants && state.participants.length > 0) {
-                    // Восстанавливаем данные
-                    participants = state.participants;
-                    usedParticipants = state.usedParticipants || [];
-                    allWinnersHistory = state.allWinnersHistory || [];
-                    
-                    // Восстанавливаем UI
-                    restoreUI();
-                    showStatus("♻️ Session restored from backup!", "success");
-                }
-            }
-        }
-
-        function restoreUI() {
-            // Обновляем статистику
-            el.cTotal.textContent = participants.length;
-            el.statsPanel.style.display = 'block';
-            updateStats();
-            renderWheelSegments();
-            initRoundInfo();
-
-            // Включаем кнопки
-            el.spin.disabled = false;
-            el.reset.disabled = false;
-            
-            // Если уже были победители, показываем экран результатов
-            if (allWinnersHistory.length > 0) {
-                el.download.style.display = 'inline-flex';
-                el.layout.classList.remove('before-spin');
-                el.layout.classList.add('after-spin');
-                el.readyMsg.style.display = 'none';
-                el.wPlaceholder.style.display = 'none';
-                
-                // Перерисовываем карточки
-                el.wContainer.innerHTML = '';
-                // Показываем последних победителей (или всех)
-                // Для простоты покажем весь список в обратном порядке (новые сверху)
-                const reversedHistory = [...allWinnersHistory].reverse();
-                reversedHistory.forEach((w) => {
-                    createWinnerCard(w, false); // false = без анимации появления
-                });
-            } else {
-                el.layout.classList.add('before-spin');
-                el.readyMsg.style.display = 'block';
-            }
         }
 
         // --- LOGIC: FILE UPLOAD ---
@@ -332,6 +261,7 @@
                     const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
                     const jsonData = XLSX.utils.sheet_to_json(firstSheet, {header: 1});
 
+                    // Flatten and clean data
                     participants = [];
                     jsonData.forEach(row => {
                         const text = row.filter(c => c).join(' | ').trim();
@@ -340,10 +270,9 @@
 
                     if (participants.length === 0) throw new Error("No valid names found");
 
-                    // Сброс при загрузке нового файла
+                    // Reset State
                     usedParticipants = [];
                     allWinnersHistory = [];
-                    saveStateToStorage(); // Сохраняем чистое состояние
                     
                     // UI Updates
                     el.cTotal.textContent = participants.length;
@@ -376,6 +305,8 @@
             el.wheel.innerHTML = '';
             const count = participants.length;
             const colors = ['#ff6b6b', '#4ecdc4', '#ffeaa7', '#a29bfe', '#fab1a0', '#74b9ff', '#81ecec', '#fd79a8'];
+            
+            // Limit rendered segments visually if too many participants (performance & aesthetics)
             const renderCount = Math.min(count, 30); 
             const segmentAngle = 360 / renderCount;
 
@@ -383,10 +314,15 @@
                 const segment = document.createElement('div');
                 segment.className = 'wheel-segment';
                 const rotate = i * segmentAngle;
+                const skew = 90 - segmentAngle; 
+                // Using simple rotation for background color slices
+                // Note: For perfect CSS pie charts, conic-gradient is often easier, 
+                // but we will stick to your clip-path method simplified or conic-gradient for stability
                 segment.style.background = `conic-gradient(${colors[i % colors.length]} ${segmentAngle}deg, transparent 0)`;
                 segment.style.transform = `rotate(${rotate}deg)`;
                 segment.style.width = "100%";
                 segment.style.height = "100%";
+                segment.style.clipPath = "none"; // Resetting clip path for conic approach
                 segment.style.borderRadius = "50%";
                 el.wheel.appendChild(segment);
             }
@@ -407,47 +343,41 @@
             const available = participants.filter(p => !usedParticipants.includes(p));
             
             if (available.length < WINNERS_PER_ROUND) {
-                showStatus(`Not enough participants! Need ${WINNERS_PER_ROUND}.`, 'error');
+                showStatus(`Not enough participants! Need ${WINNERS_PER_ROUND}, have ${available.length}.`, 'error');
                 return;
             }
 
             isSpinning = true;
             el.spin.disabled = true;
-            el.layout.classList.add('spinning-mode'); 
+            el.layout.classList.add('spinning-mode'); // Optional hook
             el.wheel.classList.add('spinning');
 
-            // Logic: Fisher-Yates
+            // 1. Determine Winners (Logic)
+            // Fisher-Yates shuffle for available pool
             for (let i = available.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
                 [available[i], available[j]] = [available[j], available[i]];
             }
             const currentWinners = available.slice(0, WINNERS_PER_ROUND);
 
-            // Visual Spin
-            const baseRot = 1800; 
+            // 2. Visual Spin
+            const baseRot = 1800; // 5 spins
             const randRot = Math.floor(Math.random() * 360);
             const totalRot = baseRot + randRot;
+            
+            // Get current rotation to add to it (continuous spinning)
             const currentTransform = el.wheel.style.transform;
             const currentDeg = currentTransform ? parseInt(currentTransform.replace(/[^\d-]/g, '')) : 0;
             const finalDeg = currentDeg + totalRot;
 
             el.wheel.style.transform = `rotate(${finalDeg}deg)`;
 
-            // Reveal
+            // 3. Reveal
             setTimeout(() => {
                 isSpinning = false;
                 el.wheel.classList.remove('spinning');
                 
-                // Переключаем лейаут СРАЗУ перед показом карточек
-                el.layout.classList.remove('before-spin');
-                el.layout.classList.add('after-spin');
-                el.readyMsg.style.display = 'none';
-                el.wPlaceholder.style.display = 'none';
-
-                // Очищаем контейнер, чтобы показать только ЭТОТ раунд?
-                // Или добавляем сверху? 
-                // Давай добавлять СВЕРХУ (prepend), чтобы новые были первыми
-                
+                // Process Winners
                 const roundWinnersData = [];
                 currentWinners.forEach((name, idx) => {
                     usedParticipants.push(name);
@@ -457,12 +387,10 @@
                     const winObj = { rank, name, prize };
                     roundWinnersData.push(winObj);
                     allWinnersHistory.push(winObj);
-                    
-                    createWinnerCard(winObj, true); // true = с анимацией
                 });
 
                 updateStats();
-                saveStateToStorage(); // ★ Сохраняем прогресс
+                showWinnersUI(roundWinnersData);
                 triggerConfetti();
                 
                 el.reset.disabled = false;
@@ -477,20 +405,28 @@
             }, 4000);
         }
 
-        // Helper для создания карточки
-        function createWinnerCard(w, animate) {
-            const card = document.createElement('div');
-            card.className = 'winner-card';
-            if (animate) {
-                card.style.animation = 'slideIn 0.5s ease-out backwards';
-            }
-            card.innerHTML = `
-                <div class="winner-rank">#${w.rank}</div>
-                <div class="winner-name">${w.name}</div>
-                <div class="winner-prize">${w.prize}</div>
-            `;
-            // Добавляем в начало списка (новые сверху)
-            el.wContainer.insertBefore(card, el.wContainer.firstChild);
+        function showWinnersUI(winners) {
+            // Layout Transition
+            el.layout.classList.remove('before-spin');
+            el.layout.classList.add('after-spin');
+            el.readyMsg.style.display = 'none';
+            el.wPlaceholder.style.display = 'none';
+
+            // Clear previous round winners from display or append? 
+            // Usually for "Round" display we clear.
+            el.wContainer.innerHTML = ''; 
+
+            winners.forEach((w, i) => {
+                const card = document.createElement('div');
+                card.className = 'winner-card';
+                card.style.animationDelay = `${i * 0.2}s`;
+                card.innerHTML = `
+                    <div class="winner-rank">#${w.rank}</div>
+                    <div class="winner-name">${w.name}</div>
+                    <div class="winner-prize">${w.prize}</div>
+                `;
+                el.wContainer.appendChild(card);
+            });
         }
 
         function updateStats() {
@@ -502,7 +438,9 @@
             var duration = 3 * 1000;
             var animationEnd = Date.now() + duration;
             var defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
+
             var random = function(min, max) { return Math.random() * (max - min) + min; }
+
             var interval = setInterval(function() {
                 var timeLeft = animationEnd - Date.now();
                 if (timeLeft <= 0) return clearInterval(interval);
@@ -515,6 +453,7 @@
         // --- LOGIC: DOWNLOAD & RESET ---
         function downloadWinnersExcel() {
             if (allWinnersHistory.length === 0) return;
+            
             const ws = XLSX.utils.json_to_sheet(allWinnersHistory);
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, "Winners");
@@ -522,19 +461,9 @@
         }
 
         function fullReset() {
-            // ★ Safety check: авто-скачивание перед удалением
-            if (allWinnersHistory.length > 0) {
-                if(confirm("Download winners list before resetting?")) {
-                    downloadWinnersExcel();
-                }
-            }
-
-            if (!confirm("⚠️ Are you sure you want to RESET ALL DATA? This cannot be undone.")) return;
-            
+            if (!confirm("Reset everything? History of winners will be lost.")) return;
             usedParticipants = [];
             allWinnersHistory = [];
-            localStorage.removeItem('raffleState'); // ★ Очищаем хранилище
-            
             updateStats();
             
             el.layout.classList.remove('after-spin');
@@ -545,10 +474,10 @@
             el.download.style.display = 'none';
             el.spin.disabled = false;
             el.reset.disabled = true;
+            
+            // Reset wheel rotation
             el.wheel.style.transition = 'none';
             el.wheel.style.transform = 'rotate(0deg)';
-            
-            showStatus("System Reset. Ready for new raffle.", "success");
         }
     </script>
 </body>
